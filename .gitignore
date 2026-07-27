@@ -1,11 +1,25 @@
+# Build
 **/bin/
 **/obj/
 
+# Visual Studio
 .vs/
+*.user
+*.suo
+
+# VS Code
 .vscode/
 
+# Rider
+.idea/
+
+# Test
 TestResults/
 coverage/
 
-*.user
-*.suo
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

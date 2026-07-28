@@ -16,5 +16,7 @@ public sealed record UpdateAnimalCommand(
     DateOnly? BirthDate,
     string Description,
     bool IsVaccinated,
-    bool IsCastrated
+    bool IsCastrated,
+    Guid? ShelterId,
+    AnimalStatus Status
 ) : IRequest<bool>;

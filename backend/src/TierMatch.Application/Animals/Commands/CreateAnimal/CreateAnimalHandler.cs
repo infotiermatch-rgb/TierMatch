@@ -19,17 +19,20 @@ public class CreateAnimalHandler
         CancellationToken cancellationToken)
     {
         var animal = new Animal
-        {
-            Name = request.Name,
-            Species = request.Species,
-            Breed = request.Breed,
-            Gender = request.Gender,
-            Size = request.Size,
-            BirthDate = request.BirthDate,
-            Description = request.Description,
-            IsVaccinated = request.IsVaccinated,
-            IsCastrated = request.IsCastrated
-        };
+{
+    Name = request.Name,
+    Species = request.Species,
+    Breed = request.Breed,
+    Gender = request.Gender,
+    Size = request.Size,
+    BirthDate = request.BirthDate,
+    Description = request.Description,
+    IsVaccinated = request.IsVaccinated,
+    IsCastrated = request.IsCastrated,
+
+    ShelterId = request.ShelterId,
+    Status = request.Status,
+};
 
         await _repository.AddAsync(animal, cancellationToken);
         await _repository.SaveChangesAsync(cancellationToken);

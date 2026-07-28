@@ -19,7 +19,9 @@ public class GetAnimalsHandler
         GetAnimalsQuery request,
         CancellationToken cancellationToken)
     {
-        var animals = await _repository.GetAllAsync(cancellationToken);
+        var animals = await _repository.GetAllAsync(
+            request.Status,
+            cancellationToken);
 
         return animals
             .Select(a => a.ToDto())

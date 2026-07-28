@@ -21,4 +21,11 @@ public class AnimalDto
     public bool IsVaccinated { get; init; }
 
     public bool IsCastrated { get; init; }
-}
+
+    public Guid? ShelterId { get; init; }
+
+    public string? ShelterName { get; init; }
+
+    public string Status { get; init; } = string.Empty; 
+
+   }

@@ -22,4 +22,8 @@ public class CreateAnimalCommand : IRequest<Guid>
     public bool IsVaccinated { get; set; }
 
     public bool IsCastrated { get; set; }
+
+    public AnimalStatus Status { get; set; } = AnimalStatus.Available;
+
+    public Guid? ShelterId { get; set; }
 }

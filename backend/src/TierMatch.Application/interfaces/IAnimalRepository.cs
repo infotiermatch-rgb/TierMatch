@@ -1,5 +1,6 @@
 using TierMatch.Domain.Entities;
 using TierMatch.Application.Animals.Models;
+using TierMatch.Domain.Enums;
 
 namespace TierMatch.Application.Interfaces;
 
@@ -22,5 +23,13 @@ public interface IAnimalRepository
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
+
+        Task<List<Animal>> GetByShelterIdAsync(
+    Guid shelterId,
+    CancellationToken cancellationToken = default);
+
+    Task<List<Animal>> GetAllAsync(
+    AnimalStatus? status,
+    CancellationToken cancellationToken = default);
 
 }

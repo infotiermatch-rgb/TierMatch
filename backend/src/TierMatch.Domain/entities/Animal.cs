@@ -23,5 +23,9 @@ public class Animal : BaseEntity
 
     public bool IsCastrated { get; set; }
 
-    public bool IsAdopted { get; set; }
+    public AnimalStatus Status { get; set; } = AnimalStatus.Available;
+
+    public Guid? ShelterId { get; set; }
+
+    public Shelter? Shelter { get; set; }
 }

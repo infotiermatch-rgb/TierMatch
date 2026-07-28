@@ -10,6 +10,11 @@ public class AnimalConfiguration : IEntityTypeConfiguration<Animal>
     {
         builder.ToTable("Animals");
 
+        builder.HasOne(x => x.Shelter)
+       .WithMany(x => x.Animals)
+       .HasForeignKey(x => x.ShelterId)
+       .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasKey(a => a.Id);
 
         builder.Property(a => a.Name)

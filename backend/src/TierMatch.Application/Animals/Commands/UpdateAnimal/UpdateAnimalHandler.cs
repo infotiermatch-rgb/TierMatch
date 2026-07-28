@@ -33,6 +33,8 @@ public class UpdateAnimalHandler
         animal.Description = request.Description;
         animal.IsVaccinated = request.IsVaccinated;
         animal.IsCastrated = request.IsCastrated;
+        animal.ShelterId = request.ShelterId;
+        animal.Status = request.Status;
 
         _repository.Update(animal);
 

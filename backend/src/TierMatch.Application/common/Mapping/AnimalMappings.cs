@@ -18,7 +18,12 @@ public static class AnimalMappings
             BirthDate = animal.BirthDate,
             Description = animal.Description,
             IsVaccinated = animal.IsVaccinated,
-            IsCastrated = animal.IsCastrated
+            IsCastrated = animal.IsCastrated,
+
+            ShelterId = animal.ShelterId,
+            ShelterName = animal.Shelter?.Name,
+
+            Status = animal.Status.ToString(),
         };
     }
 }

@@ -17,6 +17,7 @@ public static IServiceCollection AddInfrastructure(
             configuration.GetConnectionString("DefaultConnection")));
 
     services.AddScoped<IAnimalRepository, AnimalRepository>();
+    services.AddScoped<IShelterRepository, ShelterRepository>();
 
     return services;
 }

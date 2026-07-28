@@ -6,6 +6,8 @@ using TierMatch.Application.Animals.Commands.UpdateAnimal;
 using TierMatch.Application.Animals.DTOs;
 using TierMatch.Application.Animals.Queries.GetAnimalById;
 using TierMatch.Application.Animals.Queries.GetAnimals;
+using TierMatch.Api.Contracts.Animals;
+using TierMatch.Application.Animals.Commands.UpdateAnimalStatus;
 
 namespace TierMatch.Api.Controllers;
 
@@ -105,4 +107,22 @@ public class AnimalsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}/status")]
+public async Task<IActionResult> UpdateStatus(
+    Guid id,
+    [FromBody] UpdateAnimalStatusRequest request,
+    CancellationToken cancellationToken)
+{
+    var updated = await _mediator.Send(
+        new UpdateAnimalStatusCommand(
+            id,
+            request.Status),
+        cancellationToken);
+
+    if (!updated)
+        return NotFound();
+
+    return NoContent();
+}
 }

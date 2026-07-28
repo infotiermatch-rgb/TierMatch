@@ -5,24 +5,33 @@ on:
     branches:
       - main
       - develop
+
   pull_request:
     branches:
       - main
       - develop
 
 jobs:
-  build-test:
+  build:
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET 9
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 9.0.x
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore
         run: dotnet restore backend/src/TierMatch.sln
@@ -30,16 +39,16 @@ jobs:
       - name: Build
         run: dotnet build backend/src/TierMatch.sln --configuration Release --no-restore
 
-      - name: Run Tests
+      - name: Test
         run: |
           dotnet test backend/src/TierMatch.sln \
             --configuration Release \
             --no-build \
-            --collect:"XPlat Code Coverage" \
-            --results-directory TestResults
+            --collect:"XPlat Code Coverage"
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: TestResults
-          path: TestResults
+          path: '**/TestResults'

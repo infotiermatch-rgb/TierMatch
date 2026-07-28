@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
 <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
 <PackageReference Include="Testcontainers.PostgreSql" />
+<PackageReference Include="Respawn" />
   </ItemGroup>
 
   <ItemGroup>

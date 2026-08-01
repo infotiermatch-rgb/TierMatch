@@ -19,4 +19,6 @@ public class AppDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
     public DbSet<Shelter> Shelters => Set<Shelter>();
+
+    public DbSet<AnimalImage> AnimalImages => Set<AnimalImage>();
 }

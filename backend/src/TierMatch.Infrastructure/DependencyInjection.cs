@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TierMatch.Infrastructure.Data;
 using TierMatch.Application.Interfaces;
 using TierMatch.Infrastructure.Repositories;
+using TierMatch.Infrastructure.Storage;
 namespace TierMatch.Infrastructure;
 
 public static class DependencyInjection
@@ -18,6 +19,8 @@ public static IServiceCollection AddInfrastructure(
 
     services.AddScoped<IAnimalRepository, AnimalRepository>();
     services.AddScoped<IShelterRepository, ShelterRepository>();
+    services.AddScoped<IAnimalImageRepository, AnimalImageRepository>();
+    services.AddScoped<IFileStorage, LocalFileStorage>();
 
     return services;
 }

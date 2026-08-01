@@ -28,4 +28,7 @@ public class Animal : BaseEntity
     public Guid? ShelterId { get; set; }
 
     public Shelter? Shelter { get; set; }
+
+    public ICollection<AnimalImage> Images { get; set; }
+    = new List<AnimalImage>();
 }

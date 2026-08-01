@@ -1,9 +1,10 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Domain.Enums;
 
 namespace TierMatch.Application.Animals.Commands.CreateAnimal;
 
-public class CreateAnimalCommand : IRequest<Guid>
+public class CreateAnimalCommand : IRequest<Result<Guid>>
 {
     public string Name { get; set; } = string.Empty;
 

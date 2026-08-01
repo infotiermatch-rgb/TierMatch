@@ -1,21 +1,24 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Commands.UpdateAnimal;
 
 public class UpdateAnimalHandler
-    : IRequestHandler<UpdateAnimalCommand, bool>
+    : IRequestHandler<UpdateAnimalCommand, Result>
 {
     private readonly IAnimalRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateAnimalHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
+    public UpdateAnimalHandler(
+        IAnimalRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(
+    public async Task<Result> Handle(
         UpdateAnimalCommand request,
         CancellationToken cancellationToken)
     {
@@ -24,7 +27,10 @@ public class UpdateAnimalHandler
             cancellationToken);
 
         if (animal is null)
-            return false;
+        {
+            return Result.NotFound(
+                "Tier wurde nicht gefunden.");
+        }
 
         animal.Name = request.Name;
         animal.Species = request.Species;
@@ -35,13 +41,13 @@ public class UpdateAnimalHandler
         animal.Description = request.Description;
         animal.IsVaccinated = request.IsVaccinated;
         animal.IsCastrated = request.IsCastrated;
-        animal.ShelterId = request.ShelterId;
         animal.Status = request.Status;
+        animal.ShelterId = request.ShelterId;
 
         _repository.Update(animal);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return Result.Success();
     }
 }

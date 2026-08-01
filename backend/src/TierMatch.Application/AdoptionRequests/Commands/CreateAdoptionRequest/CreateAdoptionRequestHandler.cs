@@ -2,37 +2,46 @@ using MediatR;
 using TierMatch.Application.Interfaces;
 using TierMatch.Domain.Entities;
 using TierMatch.Domain.Enums;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.AdoptionRequests.Commands.CreateAdoptionRequest;
 
 public class CreateAdoptionRequestHandler
-    : IRequestHandler<CreateAdoptionRequestCommand, Guid>
+    : IRequestHandler<CreateAdoptionRequestCommand, Result<Guid>>
 {
     private readonly IAdoptionRequestRepository _repository;
     private readonly IAnimalRepository _animalRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public CreateAdoptionRequestHandler(
         IAdoptionRequestRepository repository,
-        IAnimalRepository animalRepository)
+        IAnimalRepository animalRepository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _animalRepository = animalRepository;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(
-        CreateAdoptionRequestCommand request,
-        CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(
+    CreateAdoptionRequestCommand request,
+    CancellationToken cancellationToken)
     {
         var animal = await _animalRepository.GetByIdAsync(
             request.AnimalId,
             cancellationToken);
 
         if (animal is null)
-            throw new KeyNotFoundException("Animal not found.");
+{
+    return Result<Guid>.NotFound(
+        "Tier wurde nicht gefunden.");
+}
 
         if (animal.Status != AnimalStatus.Available)
-            throw new InvalidOperationException(
-                "Dieses Tier steht nicht mehr zur Adoption.");
+{
+    return Result<Guid>.Validation(
+        "Dieses Tier steht nicht mehr zur Adoption.");
+}
 
         var adoptionRequest = new AdoptionRequest
         {
@@ -44,13 +53,12 @@ public class CreateAdoptionRequestHandler
             Message = request.Message
         };
 
-        await _repository.AddAsync(
-            adoptionRequest,
-            cancellationToken);
+      await _repository.AddAsync(
+    adoptionRequest,
+    cancellationToken);
 
-        await _repository.SaveChangesAsync(
-            cancellationToken);
+await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return adoptionRequest.Id;
+return Result<Guid>.Success(adoptionRequest.Id);
     }
 }

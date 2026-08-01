@@ -1,5 +1,7 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.Animals.Commands.DeleteAnimal;
 
-public record DeleteAnimalCommand(Guid Id) : IRequest<bool>;
+public sealed record DeleteAnimalCommand(Guid Id)
+    : IRequest<Result>;

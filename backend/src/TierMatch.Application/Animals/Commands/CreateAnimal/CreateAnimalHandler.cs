@@ -1,12 +1,13 @@
 using MediatR;
 using TierMatch.Application.Interfaces;
 using TierMatch.Domain.Entities;
+using TierMatch.Application.Common.Results;
 
 
 namespace TierMatch.Application.Animals.Commands.CreateAnimal;
 
 public class CreateAnimalHandler
-    : IRequestHandler<CreateAnimalCommand, Guid>
+    : IRequestHandler<CreateAnimalCommand, Result<Guid>>
 {
     private readonly IAnimalRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
@@ -18,7 +19,7 @@ public class CreateAnimalHandler
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(
+    public async Task<Result<Guid>> Handle(
         CreateAnimalCommand request,
         CancellationToken cancellationToken)
     {
@@ -41,6 +42,6 @@ public class CreateAnimalHandler
         await _repository.AddAsync(animal, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return animal.Id;
+        return Result<Guid>.Success(animal.Id);
     }
 }

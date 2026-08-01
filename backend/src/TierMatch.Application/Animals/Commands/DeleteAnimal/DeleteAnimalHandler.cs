@@ -1,21 +1,24 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Commands.DeleteAnimal;
 
 public class DeleteAnimalHandler
-    : IRequestHandler<DeleteAnimalCommand, bool>
+    : IRequestHandler<DeleteAnimalCommand, Result>
 {
     private readonly IAnimalRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteAnimalHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
+    public DeleteAnimalHandler(
+        IAnimalRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(
+    public async Task<Result> Handle(
         DeleteAnimalCommand request,
         CancellationToken cancellationToken)
     {
@@ -24,12 +27,15 @@ public class DeleteAnimalHandler
             cancellationToken);
 
         if (animal is null)
-            return false;
+        {
+            return Result.NotFound(
+                "Tier wurde nicht gefunden.");
+        }
 
         _repository.Delete(animal);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return Result.Success();
     }
 }

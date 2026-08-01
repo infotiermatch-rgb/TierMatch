@@ -20,18 +20,26 @@ namespace TierMatch.Api.Controllers;
 [Route("api/v1/[controller]")]
 public class AnimalsController : BaseApiController
 {
- /// <summary>
-    /// Erstellt ein neues Tier.
-    /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<Guid>> Create(
-        [FromBody] CreateAnimalCommand command,
-        CancellationToken cancellationToken)
-    {
-        var id = await Mediator.Send(command, cancellationToken);
+/// <summary>
+/// Erstellt ein neues Tier.
+/// </summary>
+[HttpPost]
+public async Task<ActionResult<Guid>> Create(
+    [FromBody] CreateAnimalCommand command,
+    CancellationToken cancellationToken)
+{
+    var result = await Mediator.Send(
+        command,
+        cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id }, id);
-    }
+    if (!result.IsSuccess)
+        return HandleResult(result);
+
+    return CreatedAtAction(
+        nameof(GetById),
+        new { id = result.Value },
+        result.Value);
+}
 
     /// <summary>
     /// Gibt alle Tiere zurück.
@@ -68,61 +76,47 @@ public class AnimalsController : BaseApiController
     /// <summary>
     /// Aktualisiert ein vorhandenes Tier.
     /// </summary>
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(
-        Guid id,
-        [FromBody] UpdateAnimalCommand command,
-        CancellationToken cancellationToken)
-    {
-        if (id != command.Id)
-        {
-            return BadRequest(
-                "Die ID in der URL stimmt nicht mit der ID im Body überein.");
-        }
+[HttpPut("{id:guid}")]
+public async Task<IActionResult> Update(
+    Guid id,
+    [FromBody] UpdateAnimalCommand command,
+    CancellationToken cancellationToken)
+{
+    if (id != command.Id)
+        return BadRequest();
 
-        var updated = await Mediator.Send(command, cancellationToken);
-
-        if (!updated)
-            return NotFound();
-
-        return NoContent();
-    }
-
-    /// <summary>
+    return HandleResult(
+        await Mediator.Send(command, cancellationToken));
+}   /// <summary>
     /// Löscht ein Tier anhand seiner ID.
     /// </summary>
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        var deleted = await Mediator.Send(
+  [HttpDelete("{id:guid}")]
+public async Task<IActionResult> Delete(
+    Guid id,
+    CancellationToken cancellationToken)
+{
+    return HandleResult(
+        await Mediator.Send(
             new DeleteAnimalCommand(id),
-            cancellationToken);
-
-        if (!deleted)
-            return NotFound();
-
-        return NoContent();
+            cancellationToken));
     }
 
     [HttpPatch("{id:guid}/status")]
+
 public async Task<IActionResult> UpdateStatus(
     Guid id,
-    [FromBody] UpdateAnimalStatusRequest request,
+    [FromBody] UpdateAnimalStatusCommand command,
     CancellationToken cancellationToken)
 {
-    var updated = await Mediator.Send(
-        new UpdateAnimalStatusCommand(
-            id,
-            request.Status),
-        cancellationToken);
+    if (id != command.Id)
+        return BadRequest();
 
-    if (!updated)
-        return NotFound();
-
-    return NoContent();
+    return HandleResult(
+        await Mediator.Send(
+            command,
+            cancellationToken));
 }
+
 /// <summary>
 /// Lädt ein Bild für ein Tier hoch.
 /// </summary>

@@ -1,4 +1,5 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.AdoptionRequests.Commands.CreateAdoptionRequest;
 
@@ -9,4 +10,4 @@ public sealed record CreateAdoptionRequestCommand(
     string Email,
     string PhoneNumber,
     string Message
-) : IRequest<Guid>;
+) : IRequest<Result<Guid>>;

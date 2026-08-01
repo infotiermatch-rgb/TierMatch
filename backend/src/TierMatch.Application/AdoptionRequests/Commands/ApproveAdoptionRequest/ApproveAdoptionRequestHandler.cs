@@ -10,13 +10,16 @@ public class ApproveAdoptionRequestHandler
 {
     private readonly IAdoptionRequestRepository _repository;
     private readonly IAnimalRepository _animalRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ApproveAdoptionRequestHandler(
         IAdoptionRequestRepository repository,
-        IAnimalRepository animalRepository)
+        IAnimalRepository animalRepository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _animalRepository = animalRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result> Handle(
@@ -28,7 +31,7 @@ public class ApproveAdoptionRequestHandler
             cancellationToken);
 
         if (adoptionRequest is null)
-            return Result<bool>.NotFound("Adoption request not found");
+    return Result.NotFound("Adoptionsanfrage wurde nicht gefunden.");
 
         if (adoptionRequest.Status != AdoptionRequestStatus.Pending)
             return Result<bool>.Validation("Adoption request is not pending");
@@ -38,10 +41,13 @@ public class ApproveAdoptionRequestHandler
             cancellationToken);
 
         if (animal is null)
-            return Result<bool>.NotFound("Animal not found");
+    return Result.NotFound("Tier wurde nicht gefunden.");
 
         if (animal.Status != AnimalStatus.Available)
-            return Result<bool>.Validation("Animal is not available for adoption");
+{
+    return Result.Validation(
+        "Dieses Tier steht nicht mehr zur Adoption.");
+}
 
         adoptionRequest.Status = AdoptionRequestStatus.Approved;
 
@@ -66,8 +72,8 @@ _repository.Update(adoptionRequest);
 _animalRepository.Update(animal);
 
 await _repository.SaveChangesAsync(cancellationToken);
-await _animalRepository.SaveChangesAsync(cancellationToken);
+await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<bool>.Success(true);
+        return Result.Success();
     }
 }

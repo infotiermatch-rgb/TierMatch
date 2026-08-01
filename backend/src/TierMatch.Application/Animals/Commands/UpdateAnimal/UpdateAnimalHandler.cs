@@ -7,10 +7,12 @@ public class UpdateAnimalHandler
     : IRequestHandler<UpdateAnimalCommand, bool>
 {
     private readonly IAnimalRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateAnimalHandler(IAnimalRepository repository)
+    public UpdateAnimalHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<bool> Handle(
@@ -38,7 +40,7 @@ public class UpdateAnimalHandler
 
         _repository.Update(animal);
 
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
     }

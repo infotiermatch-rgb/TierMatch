@@ -9,11 +9,14 @@ public class GetAnimalImagesHandler
     : IRequestHandler<GetAnimalImagesQuery, List<AnimalImageDto>>
 {
     private readonly IAnimalImageRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
     public GetAnimalImagesHandler(
-        IAnimalImageRepository repository)
+        IAnimalImageRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<AnimalImageDto>> Handle(

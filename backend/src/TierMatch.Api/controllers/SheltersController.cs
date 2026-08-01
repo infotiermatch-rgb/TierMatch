@@ -13,16 +13,8 @@ namespace TierMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class SheltersController : ControllerBase
-{
-    private readonly IMediator _mediator;
-
-    public SheltersController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    /// <summary>
+public class SheltersController : BaseApiController
+{  /// <summary>
     /// Erstellt ein neues Tierheim.
     /// </summary>
     [HttpPost]
@@ -30,7 +22,7 @@ public class SheltersController : ControllerBase
         [FromBody] CreateShelterCommand command,
         CancellationToken cancellationToken)
     {
-        var id = await _mediator.Send(command, cancellationToken);
+        var id = await Mediator.Send(command, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, id);
     }
@@ -42,7 +34,7 @@ public class SheltersController : ControllerBase
     public async Task<ActionResult<List<ShelterDto>>> GetAll(
         CancellationToken cancellationToken)
     {
-        var shelters = await _mediator.Send(
+        var shelters = await Mediator.Send(
             new GetSheltersQuery(),
             cancellationToken);
 
@@ -57,7 +49,7 @@ public class SheltersController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var shelter = await _mediator.Send(
+        var shelter = await Mediator.Send(
             new GetShelterByIdQuery { Id = id },
             cancellationToken);
 
@@ -82,7 +74,7 @@ public class SheltersController : ControllerBase
                 "Die ID in der URL stimmt nicht mit der ID im Body überein.");
         }
 
-        var updated = await _mediator.Send(command, cancellationToken);
+        var updated = await Mediator.Send(command, cancellationToken);
 
         if (!updated)
             return NotFound();
@@ -98,7 +90,7 @@ public class SheltersController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var deleted = await _mediator.Send(
+        var deleted = await Mediator.Send(
             new DeleteShelterCommand(id),
             cancellationToken);
 
@@ -113,7 +105,7 @@ public async Task<ActionResult<List<AnimalDto>>> GetAnimals(
     Guid id,
     CancellationToken cancellationToken)
 {
-    var animals = await _mediator.Send(
+    var animals = await Mediator.Send(
         new GetAnimalsByShelterQuery(id),
         cancellationToken);
 

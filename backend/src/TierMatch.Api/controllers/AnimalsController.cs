@@ -18,16 +18,9 @@ namespace TierMatch.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/[controller]")]
-public class AnimalsController : ControllerBase
+public class AnimalsController : BaseApiController
 {
-    private readonly IMediator _mediator;
-
-    public AnimalsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
-    /// <summary>
+ /// <summary>
     /// Erstellt ein neues Tier.
     /// </summary>
     [HttpPost]
@@ -35,7 +28,7 @@ public class AnimalsController : ControllerBase
         [FromBody] CreateAnimalCommand command,
         CancellationToken cancellationToken)
     {
-        var id = await _mediator.Send(command, cancellationToken);
+        var id = await Mediator.Send(command, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id }, id);
     }
@@ -47,7 +40,7 @@ public class AnimalsController : ControllerBase
     public async Task<ActionResult<List<AnimalDto>>> GetAll(
         CancellationToken cancellationToken)
     {
-        var animals = await _mediator.Send(
+        var animals = await Mediator.Send(
             new GetAnimalsQuery(),
             cancellationToken);
 
@@ -62,7 +55,7 @@ public class AnimalsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var animal = await _mediator.Send(
+        var animal = await Mediator.Send(
             new GetAnimalByIdQuery(id),
             cancellationToken);
 
@@ -87,7 +80,7 @@ public class AnimalsController : ControllerBase
                 "Die ID in der URL stimmt nicht mit der ID im Body überein.");
         }
 
-        var updated = await _mediator.Send(command, cancellationToken);
+        var updated = await Mediator.Send(command, cancellationToken);
 
         if (!updated)
             return NotFound();
@@ -103,7 +96,7 @@ public class AnimalsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
-        var deleted = await _mediator.Send(
+        var deleted = await Mediator.Send(
             new DeleteAnimalCommand(id),
             cancellationToken);
 
@@ -119,7 +112,7 @@ public async Task<IActionResult> UpdateStatus(
     [FromBody] UpdateAnimalStatusRequest request,
     CancellationToken cancellationToken)
 {
-    var updated = await _mediator.Send(
+    var updated = await Mediator.Send(
         new UpdateAnimalStatusCommand(
             id,
             request.Status),
@@ -147,7 +140,7 @@ public async Task<ActionResult<Guid>> UploadImage(
 
     await using var stream = file.OpenReadStream();
 
-    var imageId = await _mediator.Send(
+    var imageId = await Mediator.Send(
         new UploadAnimalImageCommand(
             id,
             stream,
@@ -167,7 +160,7 @@ public async Task<ActionResult<List<AnimalImageDto>>> GetImages(
     Guid id,
     CancellationToken cancellationToken)
 {
-    var images = await _mediator.Send(
+    var images = await Mediator.Send(
         new GetAnimalImagesQuery(id),
         cancellationToken);
 
@@ -182,7 +175,7 @@ public async Task<IActionResult> SetPrimaryImage(
     Guid imageId,
     CancellationToken cancellationToken)
 {
-    var success = await _mediator.Send(
+    var success = await Mediator.Send(
         new SetPrimaryAnimalImageCommand(
             animalId,
             imageId),
@@ -202,7 +195,7 @@ public async Task<IActionResult> DeleteImage(
     Guid imageId,
     CancellationToken cancellationToken)
 {
-    var deleted = await _mediator.Send(
+    var deleted = await Mediator.Send(
         new DeleteAnimalImageCommand(
             animalId,
             imageId),

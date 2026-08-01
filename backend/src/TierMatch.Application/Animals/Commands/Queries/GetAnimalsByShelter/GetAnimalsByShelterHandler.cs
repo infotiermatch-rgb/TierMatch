@@ -9,10 +9,12 @@ public class GetAnimalsByShelterHandler
     : IRequestHandler<GetAnimalsByShelterQuery, List<AnimalDto>>
 {
     private readonly IAnimalRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetAnimalsByShelterHandler(IAnimalRepository repository)
+    public GetAnimalsByShelterHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<AnimalDto>> Handle(

@@ -21,6 +21,7 @@ public static IServiceCollection AddInfrastructure(
     services.AddScoped<IShelterRepository, ShelterRepository>();
     services.AddScoped<IAnimalImageRepository, AnimalImageRepository>();
     services.AddScoped<IFileStorage, LocalFileStorage>();
+    services.AddScoped<IAdoptionRequestRepository, AdoptionRequestRepository>();
 
     return services;
 }

@@ -9,10 +9,12 @@ public class GetAnimalByIdHandler
     : IRequestHandler<GetAnimalByIdQuery, AnimalDto?>
 {
     private readonly IAnimalRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetAnimalByIdHandler(IAnimalRepository repository)
+    public GetAnimalByIdHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<AnimalDto?> Handle(

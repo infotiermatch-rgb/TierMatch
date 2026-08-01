@@ -31,4 +31,8 @@ public class Animal : BaseEntity
 
     public ICollection<AnimalImage> Images { get; set; }
     = new List<AnimalImage>();
+
+    public ICollection<AdoptionRequest> AdoptionRequests
+    { get; set; }
+    = new List<AdoptionRequest>();
 }

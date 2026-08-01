@@ -21,4 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<Shelter> Shelters => Set<Shelter>();
 
     public DbSet<AnimalImage> AnimalImages => Set<AnimalImage>();
+
+    public DbSet<AdoptionRequest> AdoptionRequests
+    => Set<AdoptionRequest>();
 }

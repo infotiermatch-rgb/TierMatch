@@ -19,13 +19,18 @@ public class ShelterRepository : IShelterRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.Shelters
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+            .Include(s => s.Animals)
+            .FirstOrDefaultAsync(
+                s => s.Id == id,
+                cancellationToken);
     }
 
     public async Task<List<Shelter>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
         return await _context.Shelters
+            .Include(s => s.Animals)
+            .OrderBy(s => s.Name)
             .ToListAsync(cancellationToken);
     }
 
@@ -33,7 +38,9 @@ public class ShelterRepository : IShelterRepository
         Shelter shelter,
         CancellationToken cancellationToken = default)
     {
-        await _context.Shelters.AddAsync(shelter, cancellationToken);
+        await _context.Shelters.AddAsync(
+            shelter,
+            cancellationToken);
     }
 
     public void Update(Shelter shelter)
@@ -46,9 +53,13 @@ public class ShelterRepository : IShelterRepository
         _context.Shelters.Remove(shelter);
     }
 
-    public async Task SaveChangesAsync(
+    public async Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        return await _context.Shelters
+            .AnyAsync(
+                s => s.Id == id,
+                cancellationToken);
     }
 }

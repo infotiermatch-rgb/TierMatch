@@ -19,6 +19,7 @@ public interface IShelterRepository
 
     void Delete(Shelter shelter);
 
-    Task SaveChangesAsync(
+    Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
 }

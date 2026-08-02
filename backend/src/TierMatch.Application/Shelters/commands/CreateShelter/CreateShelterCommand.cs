@@ -1,8 +1,9 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.Shelters.Commands.CreateShelter;
 
-public class CreateShelterCommand : IRequest<Guid>
+public class CreateShelterCommand : IRequest<Result<Guid>>
 {
     public string Name { get; set; } = string.Empty;
 

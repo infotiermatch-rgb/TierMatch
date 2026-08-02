@@ -1,15 +1,19 @@
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
+using TierMatch.Api.Models;
 
 namespace TierMatch.Api.Middleware;
 
 public class GlobalExceptionMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
-    public GlobalExceptionMiddleware(RequestDelegate next)
+    public GlobalExceptionMiddleware(
+        RequestDelegate next,
+        ILogger<GlobalExceptionMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -20,32 +24,86 @@ public class GlobalExceptionMiddleware
         }
         catch (ValidationException ex)
         {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            _logger.LogWarning(ex, "Validation failed.");
 
-            var problem = new ValidationProblemDetails(
+            await WriteValidationErrorAsync(
+                context,
                 ex.Errors
-                    .GroupBy(x => x.PropertyName)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.Select(e => e.ErrorMessage).ToArray()))
-            {
-                Title = "Validation failed",
-                Status = StatusCodes.Status400BadRequest
-            };
-
-            await context.Response.WriteAsJsonAsync(problem);
+                    .Select(e => e.ErrorMessage)
+                    .Distinct()
+                    .ToList());
         }
-        catch (Exception)
+        catch (KeyNotFoundException ex)
         {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            _logger.LogWarning(ex, "Resource not found.");
 
-            var problem = new ProblemDetails
-            {
-                Title = "Internal Server Error",
-                Status = StatusCodes.Status500InternalServerError
-            };
-
-            await context.Response.WriteAsJsonAsync(problem);
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status404NotFound,
+                "Not Found",
+                ex.Message);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized.");
+
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status401Unauthorized,
+                "Unauthorized",
+                ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception.");
+
+            await WriteErrorAsync(
+                context,
+                StatusCodes.Status500InternalServerError,
+                "Internal Server Error",
+                "Ein unerwarteter Fehler ist aufgetreten.");
+        }
+    }
+
+    private static async Task WriteValidationErrorAsync(
+        HttpContext context,
+        IReadOnlyList<string> errors)
+    {
+        context.Response.StatusCode =
+            StatusCodes.Status400BadRequest;
+
+        context.Response.ContentType =
+            "application/json";
+
+        await context.Response.WriteAsJsonAsync(
+            new ApiError
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation Error",
+                Detail = "Eine oder mehrere Validierungen sind fehlgeschlagen.",
+                Errors = errors,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            });
+    }
+
+    private static async Task WriteErrorAsync(
+        HttpContext context,
+        int statusCode,
+        string title,
+        string detail)
+    {
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsJsonAsync(
+            new ApiError
+            {
+                Status = statusCode,
+                Title = title,
+                Detail = detail,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            });
     }
 }

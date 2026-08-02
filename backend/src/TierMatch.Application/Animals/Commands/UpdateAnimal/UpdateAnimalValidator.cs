@@ -1,31 +1,30 @@
 using FluentValidation;
+using TierMatch.Application.Common.Validation;
 
 namespace TierMatch.Application.Animals.Commands.UpdateAnimal;
 
-public class UpdateAnimalValidator : AbstractValidator<UpdateAnimalCommand>
+public class UpdateAnimalValidator
+    : AbstractValidator<UpdateAnimalCommand>
 {
     public UpdateAnimalValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Die ID ist erforderlich.");
 
         RuleFor(x => x.Name)
-            .NotEmpty()
-            .MaximumLength(100);
+            .ValidAnimalName();
 
         RuleFor(x => x.Breed)
-            .MaximumLength(100);
+            .ValidAnimalBreed();
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000);
+            .ValidDescription();
 
-        RuleFor(x => x.Species)
-            .IsInEnum();
+        RuleFor(x => x.BirthDate)
+            .ValidAnimalBirthDate();
 
-        RuleFor(x => x.Gender)
-            .IsInEnum();
-
-        RuleFor(x => x.Size)
-            .IsInEnum();
+        RuleFor(x => x.ShelterId)
+            .ValidAnimalShelterId();
     }
 }

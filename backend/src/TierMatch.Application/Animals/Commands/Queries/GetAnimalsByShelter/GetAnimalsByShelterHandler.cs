@@ -1,6 +1,6 @@
 using MediatR;
 using TierMatch.Application.Animals.DTOs;
-using TierMatch.Application.Common.Mappings;
+using TierMatch.Application.Common.Mapping;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Queries.GetAnimalsByShelter;

@@ -14,15 +14,6 @@ public class AnimalImageRepository : IAnimalImageRepository
         _context = context;
     }
 
-    public async Task<AnimalImage?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
-    {
-        return await _context.AnimalImages
-            .Include(i => i.Animal)
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-    }
-
     public async Task<List<AnimalImage>> GetByAnimalIdAsync(
         Guid animalId,
         CancellationToken cancellationToken = default)
@@ -33,13 +24,24 @@ public class AnimalImageRepository : IAnimalImageRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<AnimalImage?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AnimalImages
+            .FirstOrDefaultAsync(
+                i => i.Id == id,
+                cancellationToken);
+    }
+
     public async Task<AnimalImage?> GetPrimaryAsync(
         Guid animalId,
         CancellationToken cancellationToken = default)
     {
         return await _context.AnimalImages
             .FirstOrDefaultAsync(
-                i => i.AnimalId == animalId && i.IsPrimary,
+                i => i.AnimalId == animalId &&
+                     i.IsPrimary,
                 cancellationToken);
     }
 
@@ -47,44 +49,42 @@ public class AnimalImageRepository : IAnimalImageRepository
         Guid animalId,
         CancellationToken cancellationToken = default)
     {
-        var max = await _context.AnimalImages
+        var maxSortOrder = await _context.AnimalImages
             .Where(i => i.AnimalId == animalId)
-            .MaxAsync(
-                i => (int?)i.SortOrder,
-                cancellationToken);
+            .Select(i => (int?)i.SortOrder)
+            .MaxAsync(cancellationToken);
 
-        return (max ?? 0) + 1;
+        return (maxSortOrder ?? 0) + 1;
     }
 
     public async Task AddAsync(
         AnimalImage image,
         CancellationToken cancellationToken = default)
     {
-        await _context.AnimalImages.AddAsync(image, cancellationToken);
+        await _context.AnimalImages.AddAsync(
+            image,
+            cancellationToken);
     }
 
-    public void Update(AnimalImage image)
+    public void Update(
+        AnimalImage image)
     {
         _context.AnimalImages.Update(image);
     }
 
-    public void Delete(AnimalImage image)
+    public void Delete(
+        AnimalImage image)
     {
         _context.AnimalImages.Remove(image);
     }
 
-    public async Task SaveChangesAsync(
+    public async Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        return await _context.AnimalImages
+            .AnyAsync(
+                i => i.Id == id,
+                cancellationToken);
     }
-
-    public async Task<List<AnimalImage>> GetAllByAnimalIdAsync(
-    Guid animalId,
-    CancellationToken cancellationToken = default)
-{
-    return await _context.AnimalImages
-        .Where(i => i.AnimalId == animalId)
-        .ToListAsync(cancellationToken);
-}
 }

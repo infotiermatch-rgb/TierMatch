@@ -1,8 +1,9 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.Shelters.Commands.UpdateShelter;
 
-public class UpdateShelterCommand : IRequest<bool>
+public class UpdateShelterCommand : IRequest<Result>
 {
     public Guid Id { get; set; }
 
@@ -16,7 +17,7 @@ public class UpdateShelterCommand : IRequest<bool>
 
     public string City { get; set; } = string.Empty;
 
-    public string Country { get; set; } = string.Empty;
+    public string Country { get; set; } = "DE";
 
     public string PhoneNumber { get; set; } = string.Empty;
 

@@ -1,19 +1,24 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Shelters.Commands.UpdateShelter;
 
 public class UpdateShelterHandler
-    : IRequestHandler<UpdateShelterCommand, bool>
+    : IRequestHandler<UpdateShelterCommand, Result>
 {
     private readonly IShelterRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public UpdateShelterHandler(IShelterRepository repository)
+    public UpdateShelterHandler(
+        IShelterRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(
+    public async Task<Result> Handle(
         UpdateShelterCommand request,
         CancellationToken cancellationToken)
     {
@@ -23,7 +28,8 @@ public class UpdateShelterHandler
 
         if (shelter is null)
         {
-            return false;
+            return Result.NotFound(
+                "Tierheim wurde nicht gefunden.");
         }
 
         shelter.Name = request.Name;
@@ -39,8 +45,9 @@ public class UpdateShelterHandler
 
         _repository.Update(shelter);
 
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
 
-        return true;
+        return Result.Success();
     }
 }

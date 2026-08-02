@@ -1,5 +1,4 @@
 using TierMatch.Domain.Entities;
-using TierMatch.Application.Animals.Models;
 using TierMatch.Domain.Enums;
 
 namespace TierMatch.Application.Interfaces;
@@ -11,6 +10,11 @@ public interface IAnimalRepository
         CancellationToken cancellationToken = default);
 
     Task<List<Animal>> GetAllAsync(
+        AnimalStatus? status = null,
+        CancellationToken cancellationToken = default);
+
+    Task<List<Animal>> GetByShelterIdAsync(
+        Guid shelterId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(
@@ -21,15 +25,7 @@ public interface IAnimalRepository
 
     void Delete(Animal animal);
 
-    Task SaveChangesAsync(
+    Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
-
-        Task<List<Animal>> GetByShelterIdAsync(
-    Guid shelterId,
-    CancellationToken cancellationToken = default);
-
-    Task<List<Animal>> GetAllAsync(
-    AnimalStatus? status,
-    CancellationToken cancellationToken = default);
-
 }

@@ -1,13 +1,8 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.Shelters.Commands.DeleteShelter;
 
-public class DeleteShelterCommand : IRequest<bool>
-{
-    public DeleteShelterCommand(Guid id)
-    {
-        Id = id;
-    }
-
-    public Guid Id { get; }
-}
+public sealed record DeleteShelterCommand(
+    Guid Id
+) : IRequest<Result>;

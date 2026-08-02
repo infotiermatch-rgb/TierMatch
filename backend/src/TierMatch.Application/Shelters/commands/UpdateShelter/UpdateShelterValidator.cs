@@ -1,46 +1,45 @@
 using FluentValidation;
+using TierMatch.Application.Common.Validation;
 
 namespace TierMatch.Application.Shelters.Commands.UpdateShelter;
 
-public class UpdateShelterValidator : AbstractValidator<UpdateShelterCommand>
+public class UpdateShelterValidator
+    : AbstractValidator<UpdateShelterCommand>
 {
     public UpdateShelterValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty();
+            .NotEmpty()
+            .WithMessage("Die ID ist erforderlich.");
 
         RuleFor(x => x.Name)
-            .NotEmpty()
-            .MaximumLength(200);
+            .ValidShelterName();
 
         RuleFor(x => x.Street)
-            .NotEmpty()
-            .MaximumLength(200);
+            .ValidShelterStreet();
 
         RuleFor(x => x.HouseNumber)
-            .NotEmpty()
-            .MaximumLength(20);
+            .ValidShelterHouseNumber();
 
         RuleFor(x => x.PostalCode)
-            .NotEmpty()
-            .MaximumLength(10);
+            .ValidShelterPostalCode();
 
         RuleFor(x => x.City)
-            .NotEmpty()
-            .MaximumLength(100);
+            .ValidShelterCity();
 
         RuleFor(x => x.Country)
-            .NotEmpty()
-            .MaximumLength(100);
+            .ValidShelterCountry();
 
         RuleFor(x => x.Email)
-            .EmailAddress()
-            .When(x => !string.IsNullOrWhiteSpace(x.Email));
+            .ValidEmail();
+
+        RuleFor(x => x.PhoneNumber)
+            .ValidPhoneNumber();
 
         RuleFor(x => x.Website)
-            .Must(uri =>
-                string.IsNullOrWhiteSpace(uri) ||
-                Uri.TryCreate(uri, UriKind.Absolute, out _))
-            .WithMessage("Website must be a valid URL.");
+            .ValidWebsite();
+
+        RuleFor(x => x.Description)
+            .ValidDescription();
     }
 }

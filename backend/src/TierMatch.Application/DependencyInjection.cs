@@ -1,26 +1,29 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using TierMatch.Application.Abstractions.Behaviors;
-using Mapster;
-using TierMatch.Application.Common.Mapping;
+using System.Reflection;
+using TierMatch.Application.Common.Behaviors;
 
 namespace TierMatch.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services)
+    public static IServiceCollection AddApplication(
+        this IServiceCollection services)
     {
+        var assembly = Assembly.GetExecutingAssembly();
+
+        // MediatR
         services.AddMediatR(cfg =>
         {
-            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+            cfg.RegisterServicesFromAssembly(assembly);
+
+            cfg.AddOpenBehavior(
+                typeof(ValidationBehavior<,>));
         });
 
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
-
-        services.AddTransient(
-    typeof(IPipelineBehavior<,>),
-    typeof(ValidationBehavior<,>));
+        // FluentValidation
+        services.AddValidatorsFromAssembly(assembly);
 
         return services;
     }

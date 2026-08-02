@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using TierMatch.Domain.Entities;
+using TierMatch.Infrastructure.Identity;
 
 namespace TierMatch.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -12,16 +16,18 @@ public class AppDbContext : DbContext
 
     public DbSet<Animal> Animals => Set<Animal>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-    }
     public DbSet<Shelter> Shelters => Set<Shelter>();
 
     public DbSet<AnimalImage> AnimalImages => Set<AnimalImage>();
 
     public DbSet<AdoptionRequest> AdoptionRequests
-    => Set<AdoptionRequest>();
+        => Set<AdoptionRequest>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(AppDbContext).Assembly);
+    }
 }

@@ -1,20 +1,25 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 using TierMatch.Domain.Entities;
 
 namespace TierMatch.Application.Shelters.Commands.CreateShelter;
 
 public class CreateShelterHandler
-    : IRequestHandler<CreateShelterCommand, Guid>
+    : IRequestHandler<CreateShelterCommand, Result<Guid>>
 {
     private readonly IShelterRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateShelterHandler(IShelterRepository repository)
+    public CreateShelterHandler(
+        IShelterRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(
+    public async Task<Result<Guid>> Handle(
         CreateShelterCommand request,
         CancellationToken cancellationToken)
     {
@@ -32,9 +37,14 @@ public class CreateShelterHandler
             Description = request.Description
         };
 
-        await _repository.AddAsync(shelter, cancellationToken);
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _repository.AddAsync(
+            shelter,
+            cancellationToken);
 
-        return shelter.Id;
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
+
+        return Result<Guid>.Success(
+            shelter.Id);
     }
 }

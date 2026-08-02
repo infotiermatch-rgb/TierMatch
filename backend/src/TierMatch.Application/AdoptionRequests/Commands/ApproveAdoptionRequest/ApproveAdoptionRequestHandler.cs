@@ -71,7 +71,7 @@ foreach (var requestItem in pendingRequests)
 _repository.Update(adoptionRequest);
 _animalRepository.Update(animal);
 
-await _repository.SaveChangesAsync(cancellationToken);
+
 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

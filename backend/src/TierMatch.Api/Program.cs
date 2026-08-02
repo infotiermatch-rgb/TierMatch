@@ -1,9 +1,15 @@
+using System.Text.Json.Serialization;
+using TierMatch.Api.Middleware;
 using TierMatch.Application;
 using TierMatch.Infrastructure;
-using TierMatch.Api.Middleware;
-using System.Text.Json.Serialization;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+builder.Host.UseSerilog();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -20,13 +26,30 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+//
+// Middleware
+//
+
 app.UseGlobalExceptionHandling();
+app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.MapControllers();
+
+// kommt später
+// app.UseAuthentication();
+// app.UseAuthorization();
+
+//
+// Endpoints
+//
 
 app.MapGet("/", () => "🚀 TierMatch API läuft!");
 

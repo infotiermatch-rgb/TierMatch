@@ -20,6 +20,10 @@ public interface IAdoptionRequestRepository
         AdoptionRequestStatus status,
         CancellationToken cancellationToken = default);
 
+    Task<List<AdoptionRequest>> GetPendingByAnimalIdAsync(
+        Guid animalId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         AdoptionRequest request,
         CancellationToken cancellationToken = default);
@@ -30,10 +34,7 @@ public interface IAdoptionRequestRepository
     void Delete(
         AdoptionRequest request);
 
-    Task SaveChangesAsync(
+    Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
-
-        Task<List<AdoptionRequest>> GetPendingByAnimalIdAsync(
-    Guid animalId,
-    CancellationToken cancellationToken = default);
 }

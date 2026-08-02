@@ -1,66 +1,60 @@
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TierMatch.Application.Animals.DTOs;
+using TierMatch.Application.Animals.Queries.GetAnimalsByShelter;
 using TierMatch.Application.Shelters.Commands.CreateShelter;
 using TierMatch.Application.Shelters.Commands.DeleteShelter;
 using TierMatch.Application.Shelters.Commands.UpdateShelter;
 using TierMatch.Application.Shelters.Models;
 using TierMatch.Application.Shelters.Queries.GetShelterById;
 using TierMatch.Application.Shelters.Queries.GetShelters;
-using TierMatch.Application.Animals.DTOs;
-using TierMatch.Application.Animals.Queries.GetAnimalsByShelter;
 
 namespace TierMatch.Api.Controllers;
 
-[ApiController]
-[Route("api/v1/[controller]")]
 public class SheltersController : BaseApiController
-{  /// <summary>
+{
+    /// <summary>
     /// Erstellt ein neues Tierheim.
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult<Guid>> Create(
+    public async Task<IActionResult> Create(
         [FromBody] CreateShelterCommand command,
         CancellationToken cancellationToken)
     {
-        var id = await Mediator.Send(command, cancellationToken);
-
-        return CreatedAtAction(nameof(GetById), new { id }, id);
+        return HandleResult(
+            await Mediator.Send(
+                command,
+                cancellationToken));
     }
 
     /// <summary>
     /// Gibt alle Tierheime zurück.
     /// </summary>
     [HttpGet]
-    public async Task<ActionResult<List<ShelterDto>>> GetAll(
+    public async Task<IActionResult> GetAll(
         CancellationToken cancellationToken)
     {
-        var shelters = await Mediator.Send(
-            new GetSheltersQuery(),
-            cancellationToken);
-
-        return Ok(shelters);
+        return HandleResult(
+            await Mediator.Send(
+                new GetSheltersQuery(),
+                cancellationToken));
     }
 
     /// <summary>
     /// Gibt ein Tierheim anhand seiner ID zurück.
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ShelterDto>> GetById(
+    public async Task<IActionResult> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var shelter = await Mediator.Send(
-            new GetShelterByIdQuery { Id = id },
-            cancellationToken);
-
-        if (shelter is null)
-            return NotFound();
-
-        return Ok(shelter);
+        return HandleResult(
+            await Mediator.Send(
+                new GetShelterByIdQuery(id),
+                cancellationToken));
     }
 
     /// <summary>
-    /// Aktualisiert ein vorhandenes Tierheim.
+    /// Aktualisiert ein Tierheim.
     /// </summary>
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(
@@ -69,46 +63,41 @@ public class SheltersController : BaseApiController
         CancellationToken cancellationToken)
     {
         if (id != command.Id)
-        {
             return BadRequest(
                 "Die ID in der URL stimmt nicht mit der ID im Body überein.");
-        }
 
-        var updated = await Mediator.Send(command, cancellationToken);
-
-        if (!updated)
-            return NotFound();
-
-        return NoContent();
+        return HandleResult(
+            await Mediator.Send(
+                command,
+                cancellationToken));
     }
 
     /// <summary>
-    /// Löscht ein Tierheim anhand seiner ID.
+    /// Löscht ein Tierheim.
     /// </summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var deleted = await Mediator.Send(
-            new DeleteShelterCommand(id),
-            cancellationToken);
-
-        if (!deleted)
-            return NotFound();
-
-        return NoContent();
+        return HandleResult(
+            await Mediator.Send(
+                new DeleteShelterCommand(id),
+                cancellationToken));
     }
 
+    /// <summary>
+    /// Gibt alle Tiere eines Tierheims zurück.
+    /// </summary>
     [HttpGet("{id:guid}/animals")]
-public async Task<ActionResult<List<AnimalDto>>> GetAnimals(
-    Guid id,
-    CancellationToken cancellationToken)
-{
-    var animals = await Mediator.Send(
-        new GetAnimalsByShelterQuery(id),
-        cancellationToken);
+    public async Task<ActionResult<List<AnimalDto>>> GetAnimals(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var animals = await Mediator.Send(
+            new GetAnimalsByShelterQuery(id),
+            cancellationToken);
 
-    return Ok(animals);
-}
+        return Ok(animals);
+    }
 }

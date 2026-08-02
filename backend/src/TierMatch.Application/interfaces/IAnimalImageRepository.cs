@@ -24,14 +24,13 @@ public interface IAnimalImageRepository
         AnimalImage image,
         CancellationToken cancellationToken = default);
 
-    void Update(AnimalImage image);
+    void Update(
+        AnimalImage image);
 
-    void Delete(AnimalImage image);
+    void Delete(
+        AnimalImage image);
 
-    Task SaveChangesAsync(
+    Task<bool> ExistsAsync(
+        Guid id,
         CancellationToken cancellationToken = default);
-
-Task<List<AnimalImage>> GetAllByAnimalIdAsync(
-    Guid animalId,
-    CancellationToken cancellationToken = default);
 }

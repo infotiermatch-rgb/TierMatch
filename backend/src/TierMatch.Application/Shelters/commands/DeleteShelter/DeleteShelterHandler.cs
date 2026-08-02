@@ -1,19 +1,24 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Shelters.Commands.DeleteShelter;
 
 public class DeleteShelterHandler
-    : IRequestHandler<DeleteShelterCommand, bool>
+    : IRequestHandler<DeleteShelterCommand, Result>
 {
     private readonly IShelterRepository _repository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteShelterHandler(IShelterRepository repository)
+    public DeleteShelterHandler(
+        IShelterRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(
+    public async Task<Result> Handle(
         DeleteShelterCommand request,
         CancellationToken cancellationToken)
     {
@@ -23,13 +28,15 @@ public class DeleteShelterHandler
 
         if (shelter is null)
         {
-            return false;
+            return Result.NotFound(
+                "Tierheim wurde nicht gefunden.");
         }
 
         _repository.Delete(shelter);
 
-        await _repository.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(
+            cancellationToken);
 
-        return true;
+        return Result.Success();
     }
 }

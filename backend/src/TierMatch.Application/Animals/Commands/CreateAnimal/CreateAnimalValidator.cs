@@ -1,29 +1,26 @@
 using FluentValidation;
+using TierMatch.Application.Common.Validation;
 
 namespace TierMatch.Application.Animals.Commands.CreateAnimal;
 
-public class CreateAnimalValidator : AbstractValidator<CreateAnimalCommand>
+public class CreateAnimalValidator
+    : AbstractValidator<CreateAnimalCommand>
 {
     public CreateAnimalValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty()
-            .WithMessage("Der Name ist erforderlich.")
-            .MaximumLength(100);
+            .ValidAnimalName();
 
         RuleFor(x => x.Breed)
-            .MaximumLength(100);
+            .ValidAnimalBreed();
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000);
+            .ValidDescription();
 
-        RuleFor(x => x.Species)
-            .IsInEnum();
+        RuleFor(x => x.BirthDate)
+            .ValidAnimalBirthDate();
 
-        RuleFor(x => x.Gender)
-            .IsInEnum();
-
-        RuleFor(x => x.Size)
-            .IsInEnum();
+        RuleFor(x => x.ShelterId)
+            .ValidAnimalShelterId();
     }
 }

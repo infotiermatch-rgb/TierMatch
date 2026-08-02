@@ -1,7 +1,8 @@
 using MediatR;
 using TierMatch.Application.AdoptionRequests.DTOs;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.AdoptionRequests.Queries.GetAdoptionRequests;
 
 public sealed record GetAdoptionRequestsQuery
-    : IRequest<List<AdoptionRequestDto>>;
+    : IRequest<Result<List<AdoptionRequestDto>>>;

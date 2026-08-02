@@ -1,23 +1,23 @@
 using MediatR;
 using TierMatch.Application.Animals.DTOs;
-using TierMatch.Application.Common.Mappings;
+using TierMatch.Application.Common.Mapping;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Queries.GetAnimalById;
 
 public class GetAnimalByIdHandler
-    : IRequestHandler<GetAnimalByIdQuery, AnimalDto?>
+    : IRequestHandler<GetAnimalByIdQuery, Result<AnimalDto>>
 {
     private readonly IAnimalRepository _repository;
-    private readonly IUnitOfWork _unitOfWork;
 
-    public GetAnimalByIdHandler(IAnimalRepository repository, IUnitOfWork unitOfWork)
+    public GetAnimalByIdHandler(
+        IAnimalRepository repository)
     {
         _repository = repository;
-        _unitOfWork = unitOfWork;
     }
 
-    public async Task<AnimalDto?> Handle(
+    public async Task<Result<AnimalDto>> Handle(
         GetAnimalByIdQuery request,
         CancellationToken cancellationToken)
     {
@@ -26,8 +26,12 @@ public class GetAnimalByIdHandler
             cancellationToken);
 
         if (animal is null)
-            return null;
+        {
+            return Result<AnimalDto>.NotFound(
+                "Tier wurde nicht gefunden.");
+        }
 
-        return animal.ToDto();
+        return Result<AnimalDto>.Success(
+            animal.ToDto());
     }
 }

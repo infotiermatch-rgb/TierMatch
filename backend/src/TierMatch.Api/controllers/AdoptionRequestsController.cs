@@ -18,27 +18,20 @@ public class AdoptionRequestsController : BaseApiController
 /// Erstellt eine neue Adoptionsanfrage.
 /// </summary>
 [HttpPost]
-public async Task<ActionResult<Guid>> Create(
+public async Task<IActionResult> Create(
     [FromBody] CreateAdoptionRequestDto dto,
     CancellationToken cancellationToken)
 {
-    var result = await Mediator.Send(
-        new CreateAdoptionRequestCommand(
-            dto.AnimalId,
-            dto.FirstName,
-            dto.LastName,
-            dto.Email,
-            dto.PhoneNumber,
-            dto.Message),
-        cancellationToken);
-
-    if (!result.IsSuccess)
-        return HandleResult(result);
-
-    return CreatedAtAction(
-        nameof(GetById),
-        new { id = result.Value },
-        result.Value);
+    return HandleResult(
+        await Mediator.Send(
+            new CreateAdoptionRequestCommand(
+                dto.AnimalId,
+                dto.FirstName,
+                dto.LastName,
+                dto.Email,
+                dto.PhoneNumber,
+                dto.Message),
+            cancellationToken));
 }
 
     /// <summary>

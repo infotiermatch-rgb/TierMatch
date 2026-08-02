@@ -1,8 +1,8 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Shelters.Models;
 
 namespace TierMatch.Application.Shelters.Queries.GetShelters;
 
-public class GetSheltersQuery : IRequest<List<ShelterDto>>
-{
-}
+public sealed record GetSheltersQuery
+    : IRequest<Result<List<ShelterDto>>>;

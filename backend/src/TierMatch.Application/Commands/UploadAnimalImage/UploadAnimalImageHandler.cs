@@ -1,27 +1,31 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 using TierMatch.Domain.Entities;
 
 namespace TierMatch.Application.Animals.Commands.UploadAnimalImage;
 
 public class UploadAnimalImageHandler
-    : IRequestHandler<UploadAnimalImageCommand, Guid>
+    : IRequestHandler<UploadAnimalImageCommand, Result<Guid>>
 {
     private readonly IAnimalRepository _animalRepository;
     private readonly IAnimalImageRepository _imageRepository;
     private readonly IFileStorage _fileStorage;
+    private readonly IUnitOfWork _unitOfWork;
 
     public UploadAnimalImageHandler(
         IAnimalRepository animalRepository,
         IAnimalImageRepository imageRepository,
-        IFileStorage fileStorage)
+        IFileStorage fileStorage,
+        IUnitOfWork unitOfWork)
     {
         _animalRepository = animalRepository;
         _imageRepository = imageRepository;
         _fileStorage = fileStorage;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(
+    public async Task<Result<Guid>> Handle(
         UploadAnimalImageCommand request,
         CancellationToken cancellationToken)
     {
@@ -30,43 +34,34 @@ public class UploadAnimalImageHandler
             cancellationToken);
 
         if (animal is null)
-            throw new KeyNotFoundException("Animal not found.");
+        {
+            return Result<Guid>.NotFound(
+                "Tier wurde nicht gefunden.");
+        }
 
-        var (fileName, filePath) =
-            await _fileStorage.SaveAnimalImageAsync(
-                request.AnimalId,
-                request.Stream,
-                request.FileName,
-                cancellationToken);
-
-        var sortOrder =
-            await _imageRepository.GetNextSortOrderAsync(
-                request.AnimalId,
-                cancellationToken);
-
-        var isPrimary =
-            await _imageRepository.GetPrimaryAsync(
-                request.AnimalId,
-                cancellationToken) is null;
+        var storedFile = await _fileStorage.SaveAnimalImageAsync(
+            request.AnimalId,
+            request.Stream,
+            request.FileName,
+            cancellationToken);
 
         var image = new AnimalImage
         {
             AnimalId = request.AnimalId,
-            FileName = fileName,
-            FilePath = filePath,
+            FileName = storedFile.FileName,
+            FilePath = storedFile.FilePath,
             ContentType = request.ContentType,
             FileSize = request.FileSize,
-            SortOrder = sortOrder,
-            IsPrimary = isPrimary
+            IsPrimary = !animal.Images.Any(),
+            SortOrder = animal.Images.Count
         };
 
         await _imageRepository.AddAsync(
             image,
             cancellationToken);
 
-        await _imageRepository.SaveChangesAsync(
-            cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return image.Id;
+        return Result<Guid>.Success(image.Id);
     }
 }

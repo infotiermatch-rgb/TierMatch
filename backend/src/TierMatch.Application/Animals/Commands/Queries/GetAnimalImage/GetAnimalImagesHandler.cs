@@ -1,25 +1,23 @@
 using MediatR;
 using TierMatch.Application.Animals.DTOs;
-using TierMatch.Application.Common.Mappings;
+using TierMatch.Application.Common.Mapping;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Queries.GetAnimalImages;
 
 public class GetAnimalImagesHandler
-    : IRequestHandler<GetAnimalImagesQuery, List<AnimalImageDto>>
+    : IRequestHandler<GetAnimalImagesQuery, Result<List<AnimalImageDto>>>
 {
     private readonly IAnimalImageRepository _repository;
-    private readonly IUnitOfWork _unitOfWork;
 
     public GetAnimalImagesHandler(
-        IAnimalImageRepository repository,
-        IUnitOfWork unitOfWork)
+        IAnimalImageRepository repository)
     {
         _repository = repository;
-        _unitOfWork = unitOfWork;
     }
 
-    public async Task<List<AnimalImageDto>> Handle(
+    public async Task<Result<List<AnimalImageDto>>> Handle(
         GetAnimalImagesQuery request,
         CancellationToken cancellationToken)
     {
@@ -27,8 +25,7 @@ public class GetAnimalImagesHandler
             request.AnimalId,
             cancellationToken);
 
-        return images
-            .Select(i => i.ToDto())
-            .ToList();
+        return Result<List<AnimalImageDto>>.Success(
+            images.ToDto());
     }
 }

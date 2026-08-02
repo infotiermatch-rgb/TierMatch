@@ -1,38 +1,49 @@
 using MediatR;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.Animals.Commands.DeleteAnimalImage;
 
 public class DeleteAnimalImageHandler
-    : IRequestHandler<DeleteAnimalImageCommand, bool>
+    : IRequestHandler<DeleteAnimalImageCommand, Result>
 {
-    private readonly IAnimalImageRepository _repository;
+    private readonly IAnimalImageRepository _imageRepository;
     private readonly IFileStorage _fileStorage;
+    private readonly IUnitOfWork _unitOfWork;
 
     public DeleteAnimalImageHandler(
-        IAnimalImageRepository repository,
-        IFileStorage fileStorage)
+        IAnimalImageRepository imageRepository,
+        IFileStorage fileStorage,
+        IUnitOfWork unitOfWork)
     {
-        _repository = repository;
+        _imageRepository = imageRepository;
         _fileStorage = fileStorage;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<bool> Handle(
+    public async Task<Result> Handle(
         DeleteAnimalImageCommand request,
         CancellationToken cancellationToken)
     {
-        var image = await _repository.GetByIdAsync(
+        var image = await _imageRepository.GetByIdAsync(
             request.ImageId,
             cancellationToken);
 
         if (image is null)
-            return false;
+        {
+            return Result.NotFound(
+                "Bild wurde nicht gefunden.");
+        }
+
+        if (image.AnimalId != request.AnimalId)
+        {
+            return Result.Validation(
+                "Das Bild gehört nicht zu diesem Tier.");
+        }
 
         var wasPrimary = image.IsPrimary;
 
-        _repository.Delete(image);
-
-        await _repository.SaveChangesAsync(cancellationToken);
+        _imageRepository.Delete(image);
 
         await _fileStorage.DeleteAsync(
             image.FilePath,
@@ -40,27 +51,24 @@ public class DeleteAnimalImageHandler
 
         if (wasPrimary)
         {
-            var remainingImages =
-                await _repository.GetAllByAnimalIdAsync(
-                    request.AnimalId,
-                    cancellationToken);
+            var remainingImages = await _imageRepository.GetByAnimalIdAsync(
+                request.AnimalId,
+                cancellationToken);
 
-            var nextPrimary =
-                remainingImages
-                    .OrderBy(i => i.SortOrder)
-                    .FirstOrDefault();
+            var newPrimary = remainingImages
+                .Where(i => i.Id != image.Id)
+                .OrderBy(i => i.SortOrder)
+                .FirstOrDefault();
 
-            if (nextPrimary is not null)
+            if (newPrimary is not null)
             {
-                nextPrimary.IsPrimary = true;
-
-                _repository.Update(nextPrimary);
-
-                await _repository.SaveChangesAsync(
-                    cancellationToken);
+                newPrimary.IsPrimary = true;
+                _imageRepository.Update(newPrimary);
             }
         }
 
-        return true;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
     }
 }

@@ -1,7 +1,7 @@
 using TierMatch.Application.Animals.DTOs;
 using TierMatch.Domain.Entities;
 
-namespace TierMatch.Application.Common.Mappings;
+namespace TierMatch.Application.Common.Mapping;
 
 public static class AnimalImageMappings
 {
@@ -15,7 +15,19 @@ public static class AnimalImageMappings
             ContentType = image.ContentType,
             FileSize = image.FileSize,
             IsPrimary = image.IsPrimary,
-            SortOrder = image.SortOrder
+            SortOrder = image.SortOrder,
+
+            // URL für das Frontend
+            Url = $"/uploads/animals/{image.AnimalId}/{image.FileName}"
         };
+    }
+
+    public static List<AnimalImageDto> ToDto(
+        this IEnumerable<AnimalImage> images)
+    {
+        return images
+            .OrderBy(i => i.SortOrder)
+            .Select(i => i.ToDto())
+            .ToList();
     }
 }

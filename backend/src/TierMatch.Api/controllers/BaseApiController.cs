@@ -13,55 +13,95 @@ public abstract class BaseApiController : ControllerBase
     protected IMediator Mediator =>
         _mediator ??= HttpContext.RequestServices.GetRequiredService<IMediator>();
 
-    protected ActionResult HandleResult(Result result)
+    protected IActionResult HandleResult(Result result)
     {
         if (result.IsSuccess)
-            return NoContent();
-
-        return result.Status switch
         {
-            ResultStatus.NotFound =>
-                NotFound(result.Error),
+            return result.Status switch
+            {
+                ResultStatus.Success => Ok(),
 
-            ResultStatus.Validation =>
-                BadRequest(result.Error),
+                ResultStatus.Created => StatusCode(StatusCodes.Status201Created),
 
-            ResultStatus.Conflict =>
-                Conflict(result.Error),
+                ResultStatus.NoContent => NoContent(),
 
-            ResultStatus.Unauthorized =>
-                Unauthorized(),
+                _ => Ok()
+            };
+        }
 
-            ResultStatus.Forbidden =>
-                Forbid(),
-
-            _ => Problem(result.Error)
-        };
+        return HandleFailure(result);
     }
 
-    protected ActionResult<T> HandleResult<T>(Result<T> result)
+    protected IActionResult HandleResult<T>(Result<T> result)
     {
         if (result.IsSuccess)
-            return Ok(result.Value);
+        {
+            return result.Status switch
+            {
+                ResultStatus.Success =>
+                    Ok(result.Value),
 
+                ResultStatus.Created =>
+                    CreatedAtAction(
+                        result.ActionName!,
+                        result.RouteValues,
+                        result.Value),
+
+                ResultStatus.NoContent =>
+                    NoContent(),
+
+                _ =>
+                    Ok(result.Value)
+            };
+        }
+
+        return HandleFailure(result);
+    }
+
+    private IActionResult HandleFailure(Result result)
+    {
         return result.Status switch
         {
-            ResultStatus.NotFound =>
-                NotFound(result.Error),
-
             ResultStatus.Validation =>
-                BadRequest(result.Error),
+                BadRequest(new
+                {
+                    code = result.Error.Code,
+                    message = result.Error.Message
+                }),
+
+            ResultStatus.NotFound =>
+                NotFound(new
+                {
+                    code = result.Error.Code,
+                    message = result.Error.Message
+                }),
 
             ResultStatus.Conflict =>
-                Conflict(result.Error),
+                Conflict(new
+                {
+                    code = result.Error.Code,
+                    message = result.Error.Message
+                }),
 
             ResultStatus.Unauthorized =>
-                Unauthorized(),
+                Unauthorized(new
+                {
+                    code = result.Error.Code,
+                    message = result.Error.Message
+                }),
 
             ResultStatus.Forbidden =>
-                Forbid(),
+                StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    new
+                    {
+                        code = result.Error.Code,
+                        message = result.Error.Message
+                    }),
 
-            _ => Problem(result.Error)
+            _ =>
+                Problem(
+                    title: result.Error.Message)
         };
     }
 }

@@ -1,34 +1,92 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace TierMatch.Application.Common.Results;
 
 public class Result<T> : Result
 {
     public T? Value { get; }
 
+    /// <summary>
+    /// Name der Controller-Aktion für CreatedAtAction().
+    /// </summary>
+    public string? ActionName { get; }
+
+    /// <summary>
+    /// Route-Werte für CreatedAtAction().
+    /// </summary>
+    public object? RouteValues { get; }
+
     private Result(
         T? value,
-        bool success,
-        string? error,
-        ResultStatus status)
-        : base(success, error, status)
+        ResultStatus status,
+        Error error,
+        string? actionName = null,
+        object? routeValues = null)
+        : base(status, error)
     {
         Value = value;
+        ActionName = actionName;
+        RouteValues = routeValues;
     }
 
     public static Result<T> Success(T value)
-        => new(value, true, null, ResultStatus.Success);
+    {
+        return new Result<T>(
+            value,
+            ResultStatus.Success,
+            Error.None);
+    }
+
+    public static Result<T> Created(
+        T value,
+        string actionName,
+        object routeValues)
+    {
+        return new Result<T>(
+            value,
+            ResultStatus.Created,
+            Error.None,
+            actionName,
+            routeValues);
+    }
 
     public static new Result<T> NotFound(string message)
-        => new(default, false, message, ResultStatus.NotFound);
+    {
+        return new Result<T>(
+            default,
+            ResultStatus.NotFound,
+            new Error("NotFound", message));
+    }
 
     public static new Result<T> Validation(string message)
-        => new(default, false, message, ResultStatus.Validation);
+    {
+        return new Result<T>(
+            default,
+            ResultStatus.Validation,
+            new Error("Validation", message));
+    }
 
     public static new Result<T> Conflict(string message)
-        => new(default, false, message, ResultStatus.Conflict);
+    {
+        return new Result<T>(
+            default,
+            ResultStatus.Conflict,
+            new Error("Conflict", message));
+    }
 
-    public static new Result<T> Unauthorized(string message = "Unauthorized.")
-        => new(default, false, message, ResultStatus.Unauthorized);
+    public static new Result<T> Unauthorized()
+    {
+        return new Result<T>(
+            default,
+            ResultStatus.Unauthorized,
+            new Error("Unauthorized", "Unauthorized"));
+    }
 
-    public static new Result<T> Forbidden(string message = "Forbidden.")
-        => new(default, false, message, ResultStatus.Forbidden);
+    public static new Result<T> Forbidden()
+    {
+        return new Result<T>(
+            default,
+            ResultStatus.Forbidden,
+            new Error("Forbidden", "Forbidden"));
+    }
 }

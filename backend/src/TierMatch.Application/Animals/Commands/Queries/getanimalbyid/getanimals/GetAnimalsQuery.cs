@@ -1,9 +1,10 @@
 using MediatR;
 using TierMatch.Application.Animals.DTOs;
+using TierMatch.Application.Common.Results;
 using TierMatch.Domain.Enums;
 
 namespace TierMatch.Application.Animals.Queries.GetAnimals;
 
 public sealed record GetAnimalsQuery(
     AnimalStatus? Status = null
-) : IRequest<List<AnimalDto>>;
+) : IRequest<Result<List<AnimalDto>>>;

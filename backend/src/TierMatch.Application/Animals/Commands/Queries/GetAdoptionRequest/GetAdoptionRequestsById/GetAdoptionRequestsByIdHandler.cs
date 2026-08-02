@@ -1,25 +1,23 @@
 using MediatR;
 using TierMatch.Application.AdoptionRequests.DTOs;
-using TierMatch.Application.Common.Mappings;
+using TierMatch.Application.Common.Mapping;
+using TierMatch.Application.Common.Results;
 using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application.AdoptionRequests.Queries.GetAdoptionRequestById;
 
 public class GetAdoptionRequestByIdHandler
-    : IRequestHandler<GetAdoptionRequestByIdQuery, AdoptionRequestDto?>
+    : IRequestHandler<GetAdoptionRequestByIdQuery, Result<AdoptionRequestDto>>
 {
     private readonly IAdoptionRequestRepository _repository;
-    private readonly IUnitOfWork _unitOfWork;
 
     public GetAdoptionRequestByIdHandler(
-        IAdoptionRequestRepository repository,
-        IUnitOfWork unitOfWork)
+        IAdoptionRequestRepository repository)
     {
         _repository = repository;
-        _unitOfWork = unitOfWork;
     }
 
-    public async Task<AdoptionRequestDto?> Handle(
+    public async Task<Result<AdoptionRequestDto>> Handle(
         GetAdoptionRequestByIdQuery request,
         CancellationToken cancellationToken)
     {
@@ -28,8 +26,12 @@ public class GetAdoptionRequestByIdHandler
             cancellationToken);
 
         if (adoptionRequest is null)
-            return null;
+        {
+            return Result<AdoptionRequestDto>.NotFound(
+                "Adoptionsanfrage wurde nicht gefunden.");
+        }
 
-        return adoptionRequest.ToDto();
+        return Result<AdoptionRequestDto>.Success(
+            adoptionRequest.ToDto());
     }
 }

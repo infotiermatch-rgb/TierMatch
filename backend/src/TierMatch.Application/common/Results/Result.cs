@@ -2,37 +2,59 @@ namespace TierMatch.Application.Common.Results;
 
 public class Result
 {
-    public bool IsSuccess { get; }
-
-    public string? Error { get; }
+    public bool IsSuccess => Status is
+        ResultStatus.Success or
+        ResultStatus.Created or
+        ResultStatus.NoContent;
 
     public ResultStatus Status { get; }
 
+    public Error Error { get; }
+
     protected Result(
-        bool success,
-        string? error,
-        ResultStatus status)
+        ResultStatus status,
+        Error error)
     {
-        IsSuccess = success;
-        Error = error;
         Status = status;
+        Error = error;
     }
 
     public static Result Success()
-        => new(true, null, ResultStatus.Success);
+        => new(ResultStatus.Success, Error.None);
 
-    public static Result NotFound(string message)
-        => new(false, message, ResultStatus.NotFound);
+    public static Result Created()
+        => new(ResultStatus.Created, Error.None);
 
-    public static Result Validation(string message)
-        => new(false, message, ResultStatus.Validation);
+    public static Result NoContent()
+        => new(ResultStatus.NoContent, Error.None);
 
-    public static Result Conflict(string message)
-        => new(false, message, ResultStatus.Conflict);
+    public static Result NotFound(
+        string message)
+        => new(
+            ResultStatus.NotFound,
+            new Error("NotFound", message));
 
-    public static Result Unauthorized(string message = "Unauthorized.")
-        => new(false, message, ResultStatus.Unauthorized);
+    public static Result Validation(
+        string message)
+        => new(
+            ResultStatus.Validation,
+            new Error("Validation", message));
 
-    public static Result Forbidden(string message = "Forbidden.")
-        => new(false, message, ResultStatus.Forbidden);
+    public static Result Conflict(
+        string message)
+        => new(
+            ResultStatus.Conflict,
+            new Error("Conflict", message));
+
+    public static Result Unauthorized()
+        => new(
+            ResultStatus.Unauthorized,
+            new Error("Unauthorized",
+                "Unauthorized"));
+
+    public static Result Forbidden()
+        => new(
+            ResultStatus.Forbidden,
+            new Error("Forbidden",
+                "Forbidden"));
 }

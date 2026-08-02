@@ -1,5 +1,6 @@
 using MediatR;
 using System.IO;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Application.Animals.Commands.UploadAnimalImage;
 
@@ -9,4 +10,4 @@ public sealed record UploadAnimalImageCommand(
     string FileName,
     string ContentType,
     long FileSize
-) : IRequest<Guid>;
+) : IRequest<Result<Guid>>;

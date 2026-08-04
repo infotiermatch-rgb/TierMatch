@@ -2,7 +2,7 @@ namespace TierMatch.Api.Middleware;
 
 public static class MiddlewareExtensions
 {
-    public static IApplicationBuilder UseGlobalExceptionHandling(
+    public static IApplicationBuilder UseGlobalExceptionMiddleware(
         this IApplicationBuilder app)
     {
         return app.UseMiddleware<GlobalExceptionMiddleware>();

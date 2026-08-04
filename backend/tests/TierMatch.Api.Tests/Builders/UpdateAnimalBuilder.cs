@@ -11,9 +11,9 @@ public sealed class UpdateAnimalBuilder
     private string _breed = "Golden Retriever";
     private AnimalGender _gender = AnimalGender.Male;
     private AnimalSize _size = AnimalSize.Large;
-    private DateOnly? _birthDate = new(2021, 3, 20);
+    private DateOnly? _birthDate = new DateOnly(2021, 3, 20);
     private string _description = "Updated description";
-    private bool _isVaccinated = false;
+    private bool _isVaccinated;
     private bool _isCastrated = true;
 
     private UpdateAnimalBuilder(Guid id)
@@ -88,16 +88,18 @@ public sealed class UpdateAnimalBuilder
 
     public UpdateAnimalCommand Build()
     {
-        return new UpdateAnimalCommand(
-            _id,
-            _name,
-            _species,
-            _breed,
-            _gender,
-            _size,
-            _birthDate,
-            _description,
-            _isVaccinated,
-            _isCastrated);
+        return new UpdateAnimalCommand
+        {
+            Id = _id,
+            Name = _name,
+            Species = _species,
+            Breed = _breed,
+            Gender = _gender,
+            Size = _size,
+            BirthDate = _birthDate,
+            Description = _description,
+            IsVaccinated = _isVaccinated,
+            IsCastrated = _isCastrated
+        };
     }
 }

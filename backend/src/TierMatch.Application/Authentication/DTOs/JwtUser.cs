@@ -5,4 +5,5 @@ public sealed record JwtUser(
     string Email,
     string FirstName,
     string LastName,
-    IReadOnlyCollection<string> Roles);
+    IReadOnlyCollection<string> Roles,
+    Guid? ShelterId = null);

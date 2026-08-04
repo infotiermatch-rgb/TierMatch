@@ -23,6 +23,9 @@ public class AppDbContext
     public DbSet<AdoptionRequest> AdoptionRequests
         => Set<AdoptionRequest>();
 
+        public DbSet<RefreshToken> RefreshTokens
+    => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

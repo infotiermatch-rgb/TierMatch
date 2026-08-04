@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using TierMatch.Application.Common.Behaviors;
+using TierMatch.Application.Interfaces;
 
 namespace TierMatch.Application;
 

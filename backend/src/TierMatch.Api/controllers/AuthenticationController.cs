@@ -1,8 +1,12 @@
-using MediatR;
+using System.Security.Claims;
+
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using TierMatch.Application.Authentication.Commands.Login;
-using TierMatch.Application.Authentication.Commands.Register;
+using TierMatch.Application.Authentication.DTOs;
+using TierMatch.Application.Authentication.Interfaces;
+using TierMatch.Application.Common.Results;
 
 namespace TierMatch.Api.Controllers;
 
@@ -10,65 +14,434 @@ namespace TierMatch.Api.Controllers;
 [Route("api/v1/auth")]
 public sealed class AuthenticationController : ControllerBase
 {
-    private readonly IMediator _mediator;
+    private readonly IIdentityService _identityService;
+    private readonly ILogger<AuthenticationController> _logger;
 
     public AuthenticationController(
-        IMediator mediator)
+        IIdentityService identityService,
+        ILogger<AuthenticationController> logger)
     {
-        _mediator = mediator;
+        _identityService = identityService;
+        _logger = logger;
     }
 
+    /// <summary>
+    /// Registriert einen neuen Benutzer.
+    /// </summary>
+    [AllowAnonymous]
     [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthenticationResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthenticationResponse),
+        StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Register(
-        [FromBody] RegisterCommand command,
+    public async Task<ActionResult<AuthenticationResponse>>
+        RegisterAsync(
+            [FromBody] RegisterRequest request,
+            CancellationToken cancellationToken)
+    {
+        var result =
+            await _identityService.RegisterAsync(
+                request,
+                cancellationToken);
+
+        return ToAuthenticationActionResult(result);
+    }
+
+    /// <summary>
+    /// Meldet einen Benutzer an.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("login")]
+    [ProducesResponseType(
+        typeof(AuthenticationResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<AuthenticationResponse>>
+        LoginAsync(
+            [FromBody] LoginRequest request,
+            CancellationToken cancellationToken)
+    {
+        var result =
+            await _identityService.LoginAsync(
+                request,
+                cancellationToken);
+
+        return ToAuthenticationActionResult(result);
+    }
+
+    /// <summary>
+    /// Gibt die aktuellen Daten des angemeldeten Benutzers zurück.
+    ///
+    /// Rollen, Tierheimzuordnung und Aktivstatus werden direkt
+    /// aus der Datenbank geladen.
+    /// </summary>
+    [Authorize]
+    [HttpGet("me")]
+    [ProducesResponseType(
+        typeof(CurrentUserResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<CurrentUserResponse>>
+        GetCurrentUserAsync(
+            CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(
+                "GET /api/v1/auth/me",
+                out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _identityService.GetCurrentUserAsync(
+                userId,
+                cancellationToken);
+
+        return ToCurrentUserActionResult(result);
+    }
+
+    /// <summary>
+    /// Aktualisiert Vor- und Nachnamen des angemeldeten Benutzers.
+    ///
+    /// E-Mail-Adresse, Rollen, Tierheimzuordnung und Aktivstatus
+    /// können über diesen Endpunkt nicht verändert werden.
+    /// </summary>
+    [Authorize]
+    [HttpPatch("me")]
+    [ProducesResponseType(
+        typeof(CurrentUserResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CurrentUserResponse>>
+        UpdateCurrentUserProfileAsync(
+            [FromBody] UpdateCurrentUserProfileRequest request,
+            CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(
+                "PATCH /api/v1/auth/me",
+                out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _identityService.UpdateCurrentUserProfileAsync(
+                userId,
+                request,
+                cancellationToken);
+
+        return ToCurrentUserActionResult(result);
+    }
+
+    /// <summary>
+    /// Ändert das Passwort des angemeldeten Benutzers.
+    ///
+    /// Nach erfolgreicher Änderung werden alle aktiven
+    /// Refresh Tokens des Benutzers widerrufen.
+    /// </summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult>
+        ChangePasswordAsync(
+            [FromBody] ChangePasswordRequest request,
+            CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(
+                "POST /api/v1/auth/change-password",
+                out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _identityService.ChangePasswordAsync(
+                userId,
+                request,
+                cancellationToken);
+
+        return ToActionResult(result);
+    }
+
+    /// <summary>
+    /// Erzeugt mit einem gültigen Refresh Token eine neue Sitzung.
+    ///
+    /// Der verwendete Refresh Token wird dabei rotiert.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    [ProducesResponseType(
+        typeof(AuthenticationResponse),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<AuthenticationResponse>>
+        RefreshAsync(
+            [FromBody] RefreshRequest request,
+            CancellationToken cancellationToken)
+    {
+        var result =
+            await _identityService.RefreshAsync(
+                request,
+                cancellationToken);
+
+        return ToAuthenticationActionResult(result);
+    }
+
+    /// <summary>
+    /// Meldet eine einzelne Sitzung mithilfe ihres
+    /// Refresh Tokens ab.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> LogoutAsync(
+        [FromBody] LogoutRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(
-            command,
-            cancellationToken);
+        var result =
+            await _identityService.LogoutAsync(
+                request,
+                cancellationToken);
 
+        return ToActionResult(result);
+    }
+
+    /// <summary>
+    /// Meldet den angemeldeten Benutzer auf allen Geräten ab.
+    ///
+    /// Alle noch aktiven Refresh Tokens des Benutzers
+    /// werden widerrufen.
+    /// </summary>
+    [Authorize]
+    [HttpPost("logout-all")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> LogoutAllAsync(
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(
+                "POST /api/v1/auth/logout-all",
+                out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var result =
+            await _identityService.LogoutAllAsync(
+                userId,
+                cancellationToken);
+
+        return ToActionResult(result);
+    }
+
+    private bool TryGetCurrentUserId(
+        string endpoint,
+        out Guid userId)
+    {
+        var userIdClaim =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (Guid.TryParse(
+                userIdClaim,
+                out userId))
+        {
+            return true;
+        }
+
+        _logger.LogWarning(
+            "{Endpoint} wurde ohne gültige Benutzer-ID aufgerufen.",
+            endpoint);
+
+        return false;
+    }
+
+    private ActionResult<AuthenticationResponse>
+        ToAuthenticationActionResult(
+            Result<AuthenticationResponse> result)
+    {
         return result.Status switch
         {
-            TierMatch.Application.Common.Results.ResultStatus.Success
-                => Ok(result.Value),
+            ResultStatus.Success =>
+                Ok(result.Value),
 
-            TierMatch.Application.Common.Results.ResultStatus.Validation
-                => BadRequest(result.Error),
+            ResultStatus.Created =>
+                StatusCode(
+                    StatusCodes.Status201Created,
+                    result.Value),
 
-            TierMatch.Application.Common.Results.ResultStatus.Conflict
-                => Conflict(result.Error),
+            ResultStatus.NoContent =>
+                NoContent(),
 
-            _ => StatusCode(500, result.Error)
+            ResultStatus.Validation =>
+                BadRequest(result.Error),
+
+            ResultStatus.Conflict =>
+                Conflict(result.Error),
+
+            ResultStatus.Unauthorized =>
+                Unauthorized(result.Error),
+
+            ResultStatus.Forbidden =>
+                StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    result.Error),
+
+            ResultStatus.NotFound =>
+                NotFound(result.Error),
+
+            _ =>
+                HandleUnexpectedAuthenticationResult(
+                    result)
         };
     }
 
-    [HttpPost("login")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Login(
-        [FromBody] LoginCommand command,
-        CancellationToken cancellationToken)
+    private ActionResult<CurrentUserResponse>
+        ToCurrentUserActionResult(
+            Result<CurrentUserResponse> result)
     {
-        var result = await _mediator.Send(
-            command,
-            cancellationToken);
-
         return result.Status switch
         {
-            TierMatch.Application.Common.Results.ResultStatus.Success
-                => Ok(result.Value),
+            ResultStatus.Success =>
+                Ok(result.Value),
 
-            TierMatch.Application.Common.Results.ResultStatus.Unauthorized
-                => Unauthorized(result.Error),
+            ResultStatus.Created =>
+                StatusCode(
+                    StatusCodes.Status201Created,
+                    result.Value),
 
-            TierMatch.Application.Common.Results.ResultStatus.Forbidden
-                => StatusCode(StatusCodes.Status403Forbidden, result.Error),
+            ResultStatus.NoContent =>
+                NoContent(),
 
-            _ => StatusCode(500, result.Error)
+            ResultStatus.Validation =>
+                BadRequest(result.Error),
+
+            ResultStatus.Conflict =>
+                Conflict(result.Error),
+
+            ResultStatus.Unauthorized =>
+                Unauthorized(result.Error),
+
+            ResultStatus.Forbidden =>
+                StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    result.Error),
+
+            ResultStatus.NotFound =>
+                NotFound(result.Error),
+
+            _ =>
+                HandleUnexpectedCurrentUserResult(
+                    result)
         };
+    }
+
+    private IActionResult ToActionResult(
+        Result result)
+    {
+        return result.Status switch
+        {
+            ResultStatus.Success =>
+                Ok(),
+
+            ResultStatus.Created =>
+                StatusCode(
+                    StatusCodes.Status201Created),
+
+            ResultStatus.NoContent =>
+                NoContent(),
+
+            ResultStatus.Validation =>
+                BadRequest(result.Error),
+
+            ResultStatus.Conflict =>
+                Conflict(result.Error),
+
+            ResultStatus.Unauthorized =>
+                Unauthorized(result.Error),
+
+            ResultStatus.Forbidden =>
+                StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    result.Error),
+
+            ResultStatus.NotFound =>
+                NotFound(result.Error),
+
+            _ =>
+                HandleUnexpectedResult(result)
+        };
+    }
+
+    private ActionResult<AuthenticationResponse>
+        HandleUnexpectedAuthenticationResult(
+            Result<AuthenticationResponse> result)
+    {
+        _logger.LogError(
+            "Der AuthenticationController erhielt bei einer " +
+            "Authentifizierungsanfrage den unbekannten " +
+            "Result-Status {ResultStatus}.",
+            result.Status);
+
+        return StatusCode(
+            StatusCodes.Status500InternalServerError,
+            new
+            {
+                message =
+                    "Bei der Verarbeitung der Anfrage ist ein Fehler aufgetreten."
+            });
+    }
+
+    private ActionResult<CurrentUserResponse>
+        HandleUnexpectedCurrentUserResult(
+            Result<CurrentUserResponse> result)
+    {
+        _logger.LogError(
+            "Der AuthenticationController erhielt bei der " +
+            "Verarbeitung des Benutzerprofils den unbekannten " +
+            "Result-Status {ResultStatus}.",
+            result.Status);
+
+        return StatusCode(
+            StatusCodes.Status500InternalServerError,
+            new
+            {
+                message =
+                    "Bei der Verarbeitung der Anfrage ist ein Fehler aufgetreten."
+            });
+    }
+
+    private IActionResult HandleUnexpectedResult(
+        Result result)
+    {
+        _logger.LogError(
+            "Der AuthenticationController erhielt den unbekannten " +
+            "Result-Status {ResultStatus}.",
+            result.Status);
+
+        return StatusCode(
+            StatusCodes.Status500InternalServerError,
+            new
+            {
+                message =
+                    "Bei der Verarbeitung der Anfrage ist ein Fehler aufgetreten."
+            });
     }
 }

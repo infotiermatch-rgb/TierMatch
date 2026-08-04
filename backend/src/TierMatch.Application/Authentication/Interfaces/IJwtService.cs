@@ -6,6 +6,4 @@ public interface IJwtService
 {
     Task<AuthenticationResponse> GenerateTokenAsync(
         JwtUser user);
-
-    string GenerateRefreshToken();
 }

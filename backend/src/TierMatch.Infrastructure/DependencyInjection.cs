@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 using TierMatch.Application.Authentication.Interfaces;
 using TierMatch.Application.Interfaces;
-
 using TierMatch.Infrastructure.Authentication;
 using TierMatch.Infrastructure.Data;
 using TierMatch.Infrastructure.Identity;
@@ -20,25 +19,34 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection")));
-                services.AddScoped<IUnitOfWork, UnitOfWork>();
+        var connectionString =
+            configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException(
+                "Die Connection-String-Konfiguration " +
+                "'DefaultConnection' wurde nicht gefunden.");
 
         //
-        // JWT
+        // Datenbank
+        //
+
+        services.AddDbContext<AppDbContext>(options =>
+        {
+            options.UseNpgsql(connectionString);
+        });
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        //
+        // Konfiguration
         //
 
         services.Configure<JwtOptions>(
-            configuration.GetSection(JwtOptions.SectionName));
+            configuration.GetSection(
+                JwtOptions.SectionName));
 
-            services.Configure<SeedOptions>(
-    configuration.GetSection(SeedOptions.SectionName));
-
-        services.AddScoped<IJwtService, JwtService>();
-        services.AddScoped<IIdentityService, IdentityService>();
-        services.AddScoped<IJwtService, JwtService>();
-services.AddScoped<IIdentityService, IdentityService>();
+        services.Configure<SeedOptions>(
+            configuration.GetSection(
+                SeedOptions.SectionName));
 
         //
         // ASP.NET Core Identity
@@ -58,7 +66,7 @@ services.AddScoped<IIdentityService, IdentityService>();
                 // Benutzer
                 options.User.RequireUniqueEmail = true;
 
-                // Lockout
+                // Sperrung nach fehlgeschlagenen Anmeldungen
                 options.Lockout.DefaultLockoutTimeSpan =
                     TimeSpan.FromMinutes(15);
 
@@ -69,19 +77,47 @@ services.AddScoped<IIdentityService, IdentityService>();
             .AddDefaultTokenProviders();
 
         //
+        // Authentifizierung
+        //
+
+        services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IIdentityService, IdentityService>();
+
+        services.AddScoped<
+            IRefreshTokenService,
+            RefreshTokenService>();
+
+        services.AddScoped<
+            IRefreshTokenRepository,
+            RefreshTokenRepository>();
+
+        //
         // Repositories
         //
 
-        services.AddScoped<IAnimalRepository, AnimalRepository>();
-        services.AddScoped<IShelterRepository, ShelterRepository>();
-        services.AddScoped<IAnimalImageRepository, AnimalImageRepository>();
-        services.AddScoped<IAdoptionRequestRepository, AdoptionRequestRepository>();
+        services.AddScoped<
+            IAnimalRepository,
+            AnimalRepository>();
+
+        services.AddScoped<
+            IShelterRepository,
+            ShelterRepository>();
+
+        services.AddScoped<
+            IAnimalImageRepository,
+            AnimalImageRepository>();
+
+        services.AddScoped<
+            IAdoptionRequestRepository,
+            AdoptionRequestRepository>();
 
         //
-        // Storage
+        // Dateispeicher
         //
 
-        services.AddScoped<IFileStorage, LocalFileStorage>();
+        services.AddScoped<
+            IFileStorage,
+            LocalFileStorage>();
 
         return services;
     }

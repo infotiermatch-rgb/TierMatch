@@ -8,83 +8,134 @@ using Microsoft.IdentityModel.Tokens;
 
 using TierMatch.Application.Authentication.DTOs;
 using TierMatch.Application.Authentication.Interfaces;
+using TierMatch.Application.Authorization;
 
 namespace TierMatch.Infrastructure.Authentication;
 
-public class JwtService : IJwtService
+public sealed class JwtService : IJwtService
 {
     private readonly JwtOptions _options;
 
     public JwtService(
         IOptions<JwtOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+
         _options = options.Value;
     }
 
     public Task<AuthenticationResponse> GenerateTokenAsync(
         JwtUser user)
     {
+        ArgumentNullException.ThrowIfNull(user);
+
         var expiresAt = DateTime.UtcNow.AddMinutes(
             _options.ExpirationMinutes);
 
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
+        var claims = CreateClaims(user);
 
-            new(ClaimTypes.GivenName, user.FirstName),
-            new(ClaimTypes.Surname, user.LastName),
+        var securityKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(
+                _options.SecretKey));
 
-            new(JwtRegisteredClaimNames.Jti,
-                Guid.NewGuid().ToString())
-        };
-
-        foreach (var role in user.Roles)
-        {
-            claims.Add(new Claim(
-                ClaimTypes.Role,
-                role));
-        }
-
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_options.SecretKey));
-
-        var credentials = new SigningCredentials(
-            key,
+        var signingCredentials = new SigningCredentials(
+            securityKey,
             SecurityAlgorithms.HmacSha256);
 
-        var token = new JwtSecurityToken(
+        var jwtToken = new JwtSecurityToken(
             issuer: _options.Issuer,
             audience: _options.Audience,
             claims: claims,
+            notBefore: DateTime.UtcNow,
             expires: expiresAt,
-            signingCredentials: credentials);
+            signingCredentials: signingCredentials);
 
-        var accessToken =
-            new JwtSecurityTokenHandler()
-                .WriteToken(token);
+        var accessToken = new JwtSecurityTokenHandler()
+            .WriteToken(jwtToken);
 
-        AuthenticationResponse response = new()
-        {
-            AccessToken = accessToken,
-            ExpiresAt = expiresAt,
-
-            UserId = user.Id,
-            Email = user.Email,
-
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-
-            Roles = user.Roles.ToList()
-        };
+        var response = new AuthenticationResponse(
+            accessToken,
+            string.Empty,
+            expiresAt,
+            user.Id,
+            user.Email,
+            user.FirstName,
+            user.LastName,
+            user.Roles);
 
         return Task.FromResult(response);
     }
 
     public string GenerateRefreshToken()
     {
-        var bytes = RandomNumberGenerator.GetBytes(64);
+        Span<byte> randomBytes = stackalloc byte[64];
 
-        return Convert.ToBase64String(bytes);
+        RandomNumberGenerator.Fill(randomBytes);
+
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    public string ComputeSha256Hash(
+        string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+        var valueBytes = Encoding.UTF8.GetBytes(value);
+        var hashBytes = SHA256.HashData(valueBytes);
+
+        return Convert.ToHexString(hashBytes);
+    }
+
+    private static List<Claim> CreateClaims(
+        JwtUser user)
+    {
+        List<Claim> claims =
+        [
+            new Claim(
+                JwtRegisteredClaimNames.Sub,
+                user.Id.ToString()),
+
+            new Claim(
+                ClaimTypes.NameIdentifier,
+                user.Id.ToString()),
+
+            new Claim(
+                JwtRegisteredClaimNames.Email,
+                user.Email),
+
+            new Claim(
+                ClaimTypes.Email,
+                user.Email),
+
+            new Claim(
+                ClaimTypes.GivenName,
+                user.FirstName),
+
+            new Claim(
+                ClaimTypes.Surname,
+                user.LastName),
+
+            new Claim(
+                JwtRegisteredClaimNames.Jti,
+                Guid.NewGuid().ToString())
+        ];
+
+        if (user.ShelterId.HasValue)
+        {
+            claims.Add(
+                new Claim(
+                    CustomClaimTypes.ShelterId,
+                    user.ShelterId.Value.ToString()));
+        }
+
+        foreach (var role in user.Roles)
+        {
+            claims.Add(
+                new Claim(
+                    ClaimTypes.Role,
+                    role));
+        }
+
+        return claims;
     }
 }

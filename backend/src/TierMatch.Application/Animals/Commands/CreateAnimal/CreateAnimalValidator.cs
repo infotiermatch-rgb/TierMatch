@@ -1,26 +1,43 @@
 using FluentValidation;
+
 using TierMatch.Application.Common.Validation;
 
 namespace TierMatch.Application.Animals.Commands.CreateAnimal;
 
-public class CreateAnimalValidator
+public sealed class CreateAnimalValidator
     : AbstractValidator<CreateAnimalCommand>
 {
     public CreateAnimalValidator()
     {
-        RuleFor(x => x.Name)
+        RuleFor(command => command.Name)
             .ValidAnimalName();
 
-        RuleFor(x => x.Breed)
+        RuleFor(command => command.Breed)
             .ValidAnimalBreed();
 
-        RuleFor(x => x.Description)
+        RuleFor(command => command.Description)
             .ValidDescription();
 
-        RuleFor(x => x.BirthDate)
+        RuleFor(command => command.BirthDate)
             .ValidAnimalBirthDate();
 
-        RuleFor(x => x.ShelterId)
+        RuleFor(command => command.ShelterId)
             .ValidAnimalShelterId();
+
+        RuleFor(command => command.Species)
+            .IsInEnum()
+            .WithMessage("Die Tierart ist ungültig.");
+
+        RuleFor(command => command.Gender)
+            .IsInEnum()
+            .WithMessage("Das Geschlecht ist ungültig.");
+
+        RuleFor(command => command.Size)
+            .IsInEnum()
+            .WithMessage("Die Größe ist ungültig.");
+
+        RuleFor(command => command.Status)
+            .IsInEnum()
+            .WithMessage("Der Tierstatus ist ungültig.");
     }
 }

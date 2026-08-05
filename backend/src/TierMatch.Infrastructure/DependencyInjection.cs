@@ -2,11 +2,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using TierMatch.Application.Authentication.Interfaces;
 using TierMatch.Application.Interfaces;
 using TierMatch.Infrastructure.Authentication;
+using TierMatch.Infrastructure.Authentication.Options;
 using TierMatch.Infrastructure.Data;
+using TierMatch.Infrastructure.Email;
+using TierMatch.Infrastructure.Email.Options;
 using TierMatch.Infrastructure.Identity;
 using TierMatch.Infrastructure.Repositories;
 using TierMatch.Infrastructure.Storage;
@@ -20,7 +24,8 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString =
-            configuration.GetConnectionString("DefaultConnection")
+            configuration.GetConnectionString(
+                "DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Die Connection-String-Konfiguration " +
                 "'DefaultConnection' wurde nicht gefunden.");
@@ -29,12 +34,16 @@ public static class DependencyInjection
         // Datenbank
         //
 
-        services.AddDbContext<AppDbContext>(options =>
-        {
-            options.UseNpgsql(connectionString);
-        });
+        services.AddDbContext<AppDbContext>(
+            options =>
+            {
+                options.UseNpgsql(
+                    connectionString);
+            });
 
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<
+            IUnitOfWork,
+            UnitOfWork>();
 
         //
         // Konfiguration
@@ -48,31 +57,42 @@ public static class DependencyInjection
             configuration.GetSection(
                 SeedOptions.SectionName));
 
+        services.Configure<PasswordResetOptions>(
+            configuration.GetSection(
+                PasswordResetOptions.SectionName));
+
+        services.Configure<SmtpOptions>(
+            configuration.GetSection(
+                SmtpOptions.SectionName));
+
         //
         // ASP.NET Core Identity
         //
 
         services
-            .AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
-            {
-                // Passwortregeln
-                options.Password.RequireDigit = true;
-                options.Password.RequireLowercase = true;
-                options.Password.RequireUppercase = true;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequiredLength = 8;
-                options.Password.RequiredUniqueChars = 1;
+            .AddIdentity<
+                ApplicationUser,
+                IdentityRole<Guid>>(
+                options =>
+                {
+                    // Passwortregeln
+                    options.Password.RequireDigit = true;
+                    options.Password.RequireLowercase = true;
+                    options.Password.RequireUppercase = true;
+                    options.Password.RequireNonAlphanumeric = false;
+                    options.Password.RequiredLength = 8;
+                    options.Password.RequiredUniqueChars = 1;
 
-                // Benutzer
-                options.User.RequireUniqueEmail = true;
+                    // Benutzer
+                    options.User.RequireUniqueEmail = true;
 
-                // Sperrung nach fehlgeschlagenen Anmeldungen
-                options.Lockout.DefaultLockoutTimeSpan =
-                    TimeSpan.FromMinutes(15);
+                    // Sperrung
+                    options.Lockout.DefaultLockoutTimeSpan =
+                        TimeSpan.FromMinutes(15);
 
-                options.Lockout.MaxFailedAccessAttempts = 5;
-                options.Lockout.AllowedForNewUsers = true;
-            })
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.AllowedForNewUsers = true;
+                })
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
@@ -80,8 +100,13 @@ public static class DependencyInjection
         // Authentifizierung
         //
 
-        services.AddScoped<IJwtService, JwtService>();
-        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<
+            IJwtService,
+            JwtService>();
+
+        services.AddScoped<
+            IIdentityService,
+            IdentityService>();
 
         services.AddScoped<
             IRefreshTokenService,
@@ -90,6 +115,37 @@ public static class DependencyInjection
         services.AddScoped<
             IRefreshTokenRepository,
             RefreshTokenRepository>();
+
+        //
+        // E-Mail
+        //
+
+        services.AddScoped<
+            DevelopmentEmailService>();
+
+        services.AddScoped<
+            SmtpEmailService>();
+
+        services.AddScoped<IEmailService>(
+            serviceProvider =>
+            {
+                var smtpOptions =
+                    serviceProvider
+                        .GetRequiredService<
+                            IOptions<SmtpOptions>>()
+                        .Value;
+
+                if (smtpOptions.Enabled)
+                {
+                    return serviceProvider
+                        .GetRequiredService<
+                            SmtpEmailService>();
+                }
+
+                return serviceProvider
+                    .GetRequiredService<
+                        DevelopmentEmailService>();
+            });
 
         //
         // Repositories

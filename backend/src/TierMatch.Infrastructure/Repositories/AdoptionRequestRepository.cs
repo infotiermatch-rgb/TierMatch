@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 using TierMatch.Application.Interfaces;
 using TierMatch.Domain.Entities;
 using TierMatch.Domain.Enums;
@@ -6,11 +7,13 @@ using TierMatch.Infrastructure.Data;
 
 namespace TierMatch.Infrastructure.Repositories;
 
-public class AdoptionRequestRepository : IAdoptionRequestRepository
+public class AdoptionRequestRepository
+    : IAdoptionRequestRepository
 {
     private readonly AppDbContext _context;
 
-    public AdoptionRequestRepository(AppDbContext context)
+    public AdoptionRequestRepository(
+        AppDbContext context)
     {
         _context = context;
     }
@@ -20,9 +23,9 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
-            .Include(r => r.Animal)
+            .Include(request => request.Animal)
             .FirstOrDefaultAsync(
-                r => r.Id == id,
+                request => request.Id == id,
                 cancellationToken);
     }
 
@@ -30,8 +33,10 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
-            .Include(r => r.Animal)
-            .OrderByDescending(r => r.RequestedAt)
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .OrderByDescending(
+                request => request.RequestedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -40,9 +45,28 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
-            .Include(r => r.Animal)
-            .Where(r => r.AnimalId == animalId)
-            .OrderByDescending(r => r.RequestedAt)
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .Where(
+                request =>
+                    request.AnimalId == animalId)
+            .OrderByDescending(
+                request => request.RequestedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<AdoptionRequest>> GetByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AdoptionRequests
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .Where(
+                request =>
+                    request.UserId == userId)
+            .OrderByDescending(
+                request => request.RequestedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -51,9 +75,13 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
-            .Include(r => r.Animal)
-            .Where(r => r.Status == status)
-            .OrderByDescending(r => r.RequestedAt)
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .Where(
+                request =>
+                    request.Status == status)
+            .OrderByDescending(
+                request => request.RequestedAt)
             .ToListAsync(cancellationToken);
     }
 
@@ -62,10 +90,31 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
-            .Where(r =>
-                r.AnimalId == animalId &&
-                r.Status == AdoptionRequestStatus.Pending)
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .Where(
+                request =>
+                    request.AnimalId == animalId &&
+                    request.Status ==
+                    AdoptionRequestStatus.Pending)
+            .OrderByDescending(
+                request => request.RequestedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<bool> HasPendingRequestAsync(
+        Guid userId,
+        Guid animalId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AdoptionRequests
+            .AnyAsync(
+                request =>
+                    request.UserId == userId &&
+                    request.AnimalId == animalId &&
+                    request.Status ==
+                    AdoptionRequestStatus.Pending,
+                cancellationToken);
     }
 
     public async Task AddAsync(
@@ -95,7 +144,7 @@ public class AdoptionRequestRepository : IAdoptionRequestRepository
     {
         return await _context.AdoptionRequests
             .AnyAsync(
-                r => r.Id == id,
+                request => request.Id == id,
                 cancellationToken);
     }
 }

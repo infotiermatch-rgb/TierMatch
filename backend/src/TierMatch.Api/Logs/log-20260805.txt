@@ -1,0 +1,76 @@
+2026-08-05 19:54:20.585 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 19:55:25.269 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 20:02:00.023 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 20:02:50.492 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 20:04:20.897 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 20:06:32.004 +02:00 [WRN] The WebRootPath was not found: C:\Users\pauld\Desktop\TierMatch\backend\src\TierMatch.Api\wwwroot. Static files may be unavailable.
+2026-08-05 20:22:34.033 +02:00 [INF] HTTP GET /api/v1/health responded 404 in 28.0740 ms
+2026-08-05 20:25:06.012 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 54.8770 ms
+2026-08-05 20:25:53.965 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 2.7520 ms
+2026-08-05 20:25:53.967 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 4.1721 ms
+2026-08-05 20:26:00.025 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 1.6779 ms
+2026-08-05 20:26:00.025 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 1.8022 ms
+2026-08-05 20:26:09.640 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.2637 ms
+2026-08-05 20:26:09.640 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.3039 ms
+2026-08-05 20:47:40.463 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 50.2059 ms
+2026-08-05 20:48:39.675 +02:00 [INF] HTTP OPTIONS /api/v1/auth/login responded 204 in 1.5579 ms
+2026-08-05 20:48:40.319 +02:00 [WRN] Fehlgeschlagener Loginversuch für eine unbekannte E-Mail-Adresse.
+2026-08-05 20:48:40.324 +02:00 [INF] HTTP POST /api/v1/auth/login responded 401 in 646.9595 ms
+2026-08-05 20:51:59.640 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 2.3347 ms
+2026-08-05 20:52:09.590 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.3253 ms
+2026-08-05 20:52:12.223 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.3309 ms
+2026-08-05 20:52:32.294 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.3807 ms
+2026-08-05 20:54:33.412 +02:00 [INF] HTTP OPTIONS /api/v1/auth/login responded 204 in 0.1787 ms
+2026-08-05 20:54:33.699 +02:00 [INF] HTTP POST /api/v1/auth/login responded 200 in 285.9266 ms
+2026-08-05 20:54:33.702 +02:00 [INF] HTTP OPTIONS /api/v1/auth/me responded 204 in 0.0825 ms
+2026-08-05 20:54:33.754 +02:00 [INF] HTTP GET /api/v1/auth/me responded 200 in 51.0156 ms
+2026-08-05 20:54:49.597 +02:00 [INF] HTTP OPTIONS /api/v1/auth/logout responded 204 in 0.1236 ms
+2026-08-05 20:54:49.612 +02:00 [INF] HTTP POST /api/v1/auth/logout responded 204 in 13.4670 ms
+2026-08-05 20:54:51.432 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.2657 ms
+2026-08-05 20:55:34.703 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.2599 ms
+2026-08-05 21:02:38.871 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 49.8462 ms
+2026-08-05 21:03:56.166 +02:00 [INF] HTTP OPTIONS /api/v1/auth/register responded 204 in 1.6122 ms
+2026-08-05 21:03:57.076 +02:00 [INF] Benutzer "019fd34f-98ce-7e47-9d09-3777d7321c16" wurde erfolgreich registriert.
+2026-08-05 21:03:57.088 +02:00 [INF] HTTP POST /api/v1/auth/register responded 200 in 919.1230 ms
+2026-08-05 21:03:57.091 +02:00 [INF] HTTP OPTIONS /api/v1/auth/me responded 204 in 0.0863 ms
+2026-08-05 21:03:57.156 +02:00 [INF] HTTP GET /api/v1/auth/me responded 200 in 64.3949 ms
+2026-08-05 21:04:15.325 +02:00 [INF] HTTP OPTIONS /api/v1/auth/logout responded 204 in 0.1688 ms
+2026-08-05 21:04:15.356 +02:00 [INF] HTTP POST /api/v1/auth/logout responded 204 in 29.2837 ms
+2026-08-05 21:04:43.365 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 1.1468 ms
+2026-08-05 21:11:27.197 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 48.2664 ms
+2026-08-05 21:12:11.772 +02:00 [INF] HTTP OPTIONS /api/v1/auth/forgot-password responded 204 in 1.5435 ms
+2026-08-05 21:12:12.414 +02:00 [INF] Eine Passwortzurücksetzung wurde für eine unbekannte oder nicht verfügbare Adresse angefordert.
+2026-08-05 21:12:12.416 +02:00 [INF] HTTP POST /api/v1/auth/forgot-password responded 204 in 641.4114 ms
+2026-08-05 21:12:51.152 +02:00 [INF] HTTP OPTIONS /api/v1/auth/forgot-password responded 204 in 0.1672 ms
+2026-08-05 21:12:51.826 +02:00 [INF] Die Passwort-Reset-E-Mail für pauldittrich89@gmail.com wurde erfolgreich über SMTP versendet.
+2026-08-05 21:12:51.827 +02:00 [INF] Für Benutzer "019fd2ac-925c-794a-b2f3-89e5ae0f73aa" wurde eine Passwortzurücksetzung angefordert.
+2026-08-05 21:12:51.828 +02:00 [INF] HTTP POST /api/v1/auth/forgot-password responded 204 in 674.4848 ms
+2026-08-05 21:13:26.788 +02:00 [INF] HTTP OPTIONS /api/v1/auth/reset-password responded 204 in 0.0989 ms
+2026-08-05 21:13:26.954 +02:00 [INF] Das Passwort von Benutzer "019fd2ac-925c-794a-b2f3-89e5ae0f73aa" wurde zurückgesetzt. Alle aktiven Refresh Tokens wurden widerrufen.
+2026-08-05 21:13:26.955 +02:00 [INF] HTTP POST /api/v1/auth/reset-password responded 204 in 164.8159 ms
+2026-08-05 21:13:37.094 +02:00 [INF] HTTP OPTIONS /api/v1/auth/login responded 204 in 0.1329 ms
+2026-08-05 21:13:37.209 +02:00 [INF] HTTP POST /api/v1/auth/login responded 200 in 111.7876 ms
+2026-08-05 21:13:37.214 +02:00 [INF] HTTP OPTIONS /api/v1/auth/me responded 204 in 0.0643 ms
+2026-08-05 21:13:37.254 +02:00 [INF] HTTP GET /api/v1/auth/me responded 200 in 36.9224 ms
+2026-08-05 21:13:41.619 +02:00 [INF] HTTP OPTIONS /api/v1/auth/logout responded 204 in 0.1552 ms
+2026-08-05 21:13:41.650 +02:00 [INF] HTTP POST /api/v1/auth/logout responded 204 in 27.8095 ms
+2026-08-05 21:13:42.858 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 1.5348 ms
+2026-08-05 21:14:03.545 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 0.2859 ms
+2026-08-05 21:48:44.735 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 50.0243 ms
+2026-08-05 21:48:48.725 +02:00 [WRN] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-05 21:48:49.395 +02:00 [INF] HTTP GET /api/v1/animals responded 200 in 686.1297 ms
+2026-08-05 22:03:17.482 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 48.8255 ms
+2026-08-05 22:03:18.981 +02:00 [WRN] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-05 22:03:19.748 +02:00 [INF] HTTP GET /api/v1/animals responded 200 in 782.7426 ms
+2026-08-05 22:33:16.838 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 47.7078 ms
+2026-08-05 22:33:36.951 +02:00 [INF] HTTP OPTIONS /api/v1/auth/login responded 204 in 1.5882 ms
+2026-08-05 22:33:37.821 +02:00 [INF] HTTP POST /api/v1/auth/login responded 200 in 867.4870 ms
+2026-08-05 22:33:37.824 +02:00 [INF] HTTP OPTIONS /api/v1/auth/me responded 204 in 0.0811 ms
+2026-08-05 22:33:37.891 +02:00 [INF] HTTP GET /api/v1/auth/me responded 200 in 65.9011 ms
+2026-08-05 22:33:41.674 +02:00 [INF] HTTP OPTIONS /api/v1/adoption-requests/me responded 204 in 0.1925 ms
+2026-08-05 22:33:41.682 +02:00 [WRN] You do not have a valid license key for the Lucky Penny software MediatR. This is allowed for development and testing scenarios. If you are running in production you are required to have a licensed version. Please visit https://luckypennysoftware.com to obtain a valid license.
+2026-08-05 22:33:41.729 +02:00 [INF] HTTP GET /api/v1/adoption-requests/me responded 200 in 52.7223 ms
+2026-08-05 22:34:15.740 +02:00 [INF] HTTP OPTIONS /api/v1/health responded 204 in 0.1298 ms
+2026-08-05 22:34:15.743 +02:00 [INF] HTTP GET /api/v1/health responded 200 in 1.2373 ms
+2026-08-05 22:34:43.698 +02:00 [INF] HTTP OPTIONS /api/v1/auth/logout responded 204 in 0.1367 ms
+2026-08-05 22:34:43.729 +02:00 [INF] HTTP POST /api/v1/auth/logout responded 204 in 29.9012 ms

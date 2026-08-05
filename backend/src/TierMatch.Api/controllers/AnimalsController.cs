@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using TierMatch.Api.Contracts.Animals;
 
 using TierMatch.Application.Animals.Commands.CreateAnimal;
 using TierMatch.Application.Animals.Commands.DeleteAnimal;
@@ -188,10 +189,10 @@ public sealed class AnimalsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadImage(
         Guid animalId,
-        [FromForm] IFormFile file,
+        [FromForm] UploadAnimalImageRequest request,
         CancellationToken cancellationToken)
     {
-        if (file.Length == 0)
+        if (request.File is null || request.File.Length == 0)
         {
             return BadRequest(new
             {
@@ -199,15 +200,15 @@ public sealed class AnimalsController : BaseApiController
             });
         }
 
-        await using var stream = file.OpenReadStream();
+        await using var stream = request.File.OpenReadStream();
 
         var result = await Mediator.Send(
             new UploadAnimalImageCommand(
                 animalId,
                 stream,
-                file.FileName,
-                file.ContentType,
-                file.Length),
+                request.File.FileName,
+                request.File.ContentType,
+                request.File.Length),
             cancellationToken);
 
         return HandleResult(result);

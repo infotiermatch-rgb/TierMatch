@@ -9,6 +9,14 @@ public class AdoptionRequest : BaseEntity
 
     public Animal Animal { get; set; } = null!;
 
+    /*
+     * Nullable, damit bereits vorhandene Adoptionsanfragen
+     * weiterhin migriert werden können.
+     *
+     * Neue Anfragen erhalten immer die Benutzer-ID aus dem JWT.
+     */
+    public Guid? UserId { get; set; }
+
     public string FirstName { get; set; } = string.Empty;
 
     public string LastName { get; set; } = string.Empty;

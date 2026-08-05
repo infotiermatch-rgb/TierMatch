@@ -16,11 +16,20 @@ public interface IAdoptionRequestRepository
         Guid animalId,
         CancellationToken cancellationToken = default);
 
+    Task<List<AdoptionRequest>> GetByUserIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
     Task<List<AdoptionRequest>> GetByStatusAsync(
         AdoptionRequestStatus status,
         CancellationToken cancellationToken = default);
 
     Task<List<AdoptionRequest>> GetPendingByAnimalIdAsync(
+        Guid animalId,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> HasPendingRequestAsync(
+        Guid userId,
         Guid animalId,
         CancellationToken cancellationToken = default);
 

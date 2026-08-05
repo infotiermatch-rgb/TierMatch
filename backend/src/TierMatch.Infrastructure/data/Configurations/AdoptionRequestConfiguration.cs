@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using TierMatch.Domain.Entities;
 
 namespace TierMatch.Infrastructure.Data.Configurations;
@@ -7,39 +8,54 @@ namespace TierMatch.Infrastructure.Data.Configurations;
 public class AdoptionRequestConfiguration
     : IEntityTypeConfiguration<AdoptionRequest>
 {
-    public void Configure(EntityTypeBuilder<AdoptionRequest> builder)
+    public void Configure(
+        EntityTypeBuilder<AdoptionRequest> builder)
     {
         builder.ToTable("AdoptionRequests");
 
-        builder.HasKey(x => x.Id);
+        builder.HasKey(request => request.Id);
 
-        builder.Property(x => x.FirstName)
+        builder.Property(request => request.UserId)
+            .IsRequired(false);
+
+        builder.Property(request => request.FirstName)
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(x => x.LastName)
+        builder.Property(request => request.LastName)
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(x => x.Email)
+        builder.Property(request => request.Email)
             .HasMaxLength(255)
             .IsRequired();
 
-        builder.Property(x => x.PhoneNumber)
+        builder.Property(request => request.PhoneNumber)
             .HasMaxLength(50);
 
-        builder.Property(x => x.Message)
+        builder.Property(request => request.Message)
             .HasMaxLength(4000);
 
-        builder.Property(x => x.Status)
-            .HasConversion<int>();
-
-        builder.Property(x => x.RequestedAt)
+        builder.Property(request => request.Status)
+            .HasConversion<int>()
             .IsRequired();
 
-        builder.HasOne(x => x.Animal)
-            .WithMany(x => x.AdoptionRequests)
-            .HasForeignKey(x => x.AnimalId)
+        builder.Property(request => request.RequestedAt)
+            .IsRequired();
+
+        builder.HasIndex(request => request.UserId);
+
+        builder.HasIndex(
+            request => new
+            {
+                request.UserId,
+                request.AnimalId,
+                request.Status
+            });
+
+        builder.HasOne(request => request.Animal)
+            .WithMany(animal => animal.AdoptionRequests)
+            .HasForeignKey(request => request.AnimalId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -13,8 +13,6 @@ namespace TierMatch.Infrastructure.Authentication;
 
 public sealed partial class IdentityService : IIdentityService
 {
-    private const string DefaultUserRole = Roles.User;
-
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IJwtService _jwtService;
@@ -22,6 +20,7 @@ public sealed partial class IdentityService : IIdentityService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IShelterRepository _shelterRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IEmailService _emailService;
     private readonly ILogger<IdentityService> _logger;
 
     public IdentityService(
@@ -32,6 +31,7 @@ public sealed partial class IdentityService : IIdentityService
         IRefreshTokenRepository refreshTokenRepository,
         IShelterRepository shelterRepository,
         IUnitOfWork unitOfWork,
+        IEmailService emailService,
         ILogger<IdentityService> logger)
     {
         _userManager = userManager;
@@ -41,6 +41,7 @@ public sealed partial class IdentityService : IIdentityService
         _refreshTokenRepository = refreshTokenRepository;
         _shelterRepository = shelterRepository;
         _unitOfWork = unitOfWork;
+        _emailService = emailService;
         _logger = logger;
     }
 
@@ -52,8 +53,7 @@ public sealed partial class IdentityService : IIdentityService
 
         var email = request.Email.Trim();
 
-        var existingUser = await _userManager.FindByEmailAsync(
-            email);
+        var existingUser = await _userManager.FindByEmailAsync(email);
 
         if (existingUser is not null)
         {
@@ -85,12 +85,11 @@ public sealed partial class IdentityService : IIdentityService
 
         var roleResult = await _userManager.AddToRoleAsync(
             user,
-            DefaultUserRole);
+            Roles.User);
 
         if (!roleResult.Succeeded)
         {
-            var deleteResult = await _userManager.DeleteAsync(
-                user);
+            var deleteResult = await _userManager.DeleteAsync(user);
 
             if (!deleteResult.Succeeded)
             {
@@ -100,13 +99,6 @@ public sealed partial class IdentityService : IIdentityService
                     user.Id,
                     FormatIdentityErrors(deleteResult));
             }
-
-            _logger.LogError(
-                "Die Rolle {Role} konnte dem neuen Benutzer {UserId} " +
-                "nicht zugewiesen werden. Fehler: {Errors}",
-                DefaultUserRole,
-                user.Id,
-                FormatIdentityErrors(roleResult));
 
             return Result<AuthenticationResponse>.Conflict(
                 "Die Standardrolle konnte nicht zugewiesen werden.");
@@ -121,8 +113,7 @@ public sealed partial class IdentityService : IIdentityService
             "Benutzer {UserId} wurde erfolgreich registriert.",
             user.Id);
 
-        return Result<AuthenticationResponse>.Success(
-            authentication);
+        return Result<AuthenticationResponse>.Success(authentication);
     }
 
     public async Task<Result<AuthenticationResponse>> LoginAsync(
@@ -132,67 +123,42 @@ public sealed partial class IdentityService : IIdentityService
         cancellationToken.ThrowIfCancellationRequested();
 
         var email = request.Email.Trim();
-
-        var user = await _userManager.FindByEmailAsync(
-            email);
+        var user = await _userManager.FindByEmailAsync(email);
 
         if (user is null)
         {
             _logger.LogWarning(
-                "Fehlgeschlagener Loginversuch für eine unbekannte " +
-                "E-Mail-Adresse.");
+                "Fehlgeschlagener Loginversuch für eine unbekannte E-Mail-Adresse.");
 
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
         if (!user.IsActive)
         {
-            _logger.LogWarning(
-                "Der deaktivierte Benutzer {UserId} hat versucht, " +
-                "sich anzumelden.",
-                user.Id);
-
             return Result<AuthenticationResponse>.Forbidden();
         }
 
-        var signInResult =
-            await _signInManager.CheckPasswordSignInAsync(
-                user,
-                request.Password,
-                lockoutOnFailure: true);
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            request.Password,
+            lockoutOnFailure: true);
 
         if (signInResult.IsLockedOut)
         {
-            _logger.LogWarning(
-                "Der Benutzer {UserId} ist aufgrund zu vieler " +
-                "fehlgeschlagener Anmeldeversuche gesperrt.",
-                user.Id);
-
             return Result<AuthenticationResponse>.Forbidden();
         }
 
         if (!signInResult.Succeeded)
         {
-            _logger.LogWarning(
-                "Fehlgeschlagener Loginversuch für Benutzer {UserId}.",
-                user.Id);
-
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
         user.LastLoginAt = DateTime.UtcNow;
 
-        var updateResult = await _userManager.UpdateAsync(
-            user);
+        var updateResult = await _userManager.UpdateAsync(user);
 
         if (!updateResult.Succeeded)
         {
-            _logger.LogError(
-                "Der letzte Loginzeitpunkt von Benutzer {UserId} " +
-                "konnte nicht gespeichert werden. Fehler: {Errors}",
-                user.Id,
-                FormatIdentityErrors(updateResult));
-
             return Result<AuthenticationResponse>.Conflict(
                 "Die Anmeldung konnte nicht vollständig verarbeitet werden.");
         }
@@ -202,12 +168,7 @@ public sealed partial class IdentityService : IIdentityService
             refreshTokenToReplace: null,
             cancellationToken);
 
-        _logger.LogInformation(
-            "Benutzer {UserId} hat sich erfolgreich angemeldet.",
-            user.Id);
-
-        return Result<AuthenticationResponse>.Success(
-            authentication);
+        return Result<AuthenticationResponse>.Success(authentication);
     }
 
     public async Task<Result<AuthenticationResponse>> RefreshAsync(
@@ -222,67 +183,26 @@ public sealed partial class IdentityService : IIdentityService
                 "Der Refresh Token darf nicht leer sein.");
         }
 
-        var storedRefreshToken =
-            await _refreshTokenRepository.GetByTokenAsync(
-                request.RefreshToken,
-                cancellationToken);
+        var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(
+            request.RefreshToken,
+            cancellationToken);
 
         if (storedRefreshToken is null)
         {
-            _logger.LogWarning(
-                "Es wurde versucht, einen unbekannten Refresh Token " +
-                "zu verwenden.");
-
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
-        /*
-         * Die erneute Verwendung eines widerrufenen Refresh Tokens
-         * kann auf einen gestohlenen Token hinweisen.
-         *
-         * Deshalb werden alle aktiven Sitzungen des Benutzers
-         * vorsorglich widerrufen.
-         */
         if (storedRefreshToken.IsRevoked)
         {
-            var activeTokens =
-                await _refreshTokenRepository
-                    .GetActiveTokensByUserIdAsync(
-                        storedRefreshToken.UserId,
-                        cancellationToken);
-
-            foreach (var activeToken in activeTokens)
-            {
-                activeToken.Revoke(
-                    replacedByTokenHash: null,
-                    revokedByIp: null);
-            }
-
-            if (activeTokens.Count > 0)
-            {
-                await _unitOfWork.SaveChangesAsync(
-                    cancellationToken);
-            }
-
-            _logger.LogWarning(
-                "Ein bereits widerrufener Refresh Token {RefreshTokenId} " +
-                "von Benutzer {UserId} wurde erneut verwendet. " +
-                "{TokenCount} aktive Sitzungen wurden widerrufen.",
-                storedRefreshToken.Id,
+            await RevokeActiveRefreshTokensAsync(
                 storedRefreshToken.UserId,
-                activeTokens.Count);
+                cancellationToken);
 
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
         if (storedRefreshToken.IsExpired)
         {
-            _logger.LogInformation(
-                "Der abgelaufene Refresh Token {RefreshTokenId} " +
-                "von Benutzer {UserId} wurde abgelehnt.",
-                storedRefreshToken.Id,
-                storedRefreshToken.UserId);
-
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
@@ -291,21 +211,11 @@ public sealed partial class IdentityService : IIdentityService
 
         if (user is null)
         {
-            _logger.LogWarning(
-                "Für Refresh Token {RefreshTokenId} wurde kein " +
-                "Benutzer gefunden.",
-                storedRefreshToken.Id);
-
             return Result<AuthenticationResponse>.Unauthorized();
         }
 
         if (!user.IsActive)
         {
-            _logger.LogWarning(
-                "Ein Refresh-Versuch für den deaktivierten Benutzer " +
-                "{UserId} wurde abgelehnt.",
-                user.Id);
-
             return Result<AuthenticationResponse>.Forbidden();
         }
 
@@ -314,14 +224,7 @@ public sealed partial class IdentityService : IIdentityService
             storedRefreshToken,
             cancellationToken);
 
-        _logger.LogInformation(
-            "Refresh Token {RefreshTokenId} von Benutzer {UserId} " +
-            "wurde erfolgreich rotiert.",
-            storedRefreshToken.Id,
-            user.Id);
-
-        return Result<AuthenticationResponse>.Success(
-            authentication);
+        return Result<AuthenticationResponse>.Success(authentication);
     }
 
     public async Task<Result> LogoutAsync(
@@ -336,18 +239,11 @@ public sealed partial class IdentityService : IIdentityService
                 "Der Refresh Token darf nicht leer sein.");
         }
 
-        var storedRefreshToken =
-            await _refreshTokenRepository.GetByTokenAsync(
-                request.RefreshToken,
-                cancellationToken);
+        var storedRefreshToken = await _refreshTokenRepository.GetByTokenAsync(
+            request.RefreshToken,
+            cancellationToken);
 
-        /*
-         * Logout ist idempotent.
-         * Ein unbekannter, abgelaufener oder bereits widerrufener
-         * Token gilt ebenfalls als erfolgreich abgemeldet.
-         */
-        if (storedRefreshToken is null ||
-            !storedRefreshToken.IsActive)
+        if (storedRefreshToken is null || !storedRefreshToken.IsActive)
         {
             return Result.NoContent();
         }
@@ -356,14 +252,7 @@ public sealed partial class IdentityService : IIdentityService
             replacedByTokenHash: null,
             revokedByIp: null);
 
-        await _unitOfWork.SaveChangesAsync(
-            cancellationToken);
-
-        _logger.LogInformation(
-            "Refresh Token {RefreshTokenId} von Benutzer {UserId} " +
-            "wurde durch Logout widerrufen.",
-            storedRefreshToken.Id,
-            storedRefreshToken.UserId);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.NoContent();
     }
@@ -379,8 +268,7 @@ public sealed partial class IdentityService : IIdentityService
             return Result.Unauthorized();
         }
 
-        var user = await _userManager.FindByIdAsync(
-            userId.ToString());
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
         {
@@ -392,32 +280,9 @@ public sealed partial class IdentityService : IIdentityService
             return Result.Forbidden();
         }
 
-        var activeRefreshTokens =
-            await _refreshTokenRepository
-                .GetActiveTokensByUserIdAsync(
-                    userId,
-                    cancellationToken);
-
-        if (activeRefreshTokens.Count == 0)
-        {
-            return Result.NoContent();
-        }
-
-        foreach (var refreshToken in activeRefreshTokens)
-        {
-            refreshToken.Revoke(
-                replacedByTokenHash: null,
-                revokedByIp: null);
-        }
-
-        await _unitOfWork.SaveChangesAsync(
+        await RevokeActiveRefreshTokensAsync(
+            userId,
             cancellationToken);
-
-        _logger.LogInformation(
-            "{TokenCount} aktive Refresh Tokens von Benutzer {UserId} " +
-            "wurden widerrufen.",
-            activeRefreshTokens.Count,
-            userId);
 
         return Result.NoContent();
     }
@@ -429,32 +294,23 @@ public sealed partial class IdentityService : IIdentityService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (userId == Guid.Empty)
+        if (userId == Guid.Empty || shelterId == Guid.Empty)
         {
             return Result.Validation(
-                "Es wurde keine gültige Benutzer-ID angegeben.");
+                "Benutzer-ID und Tierheim-ID müssen gültig sein.");
         }
 
-        if (shelterId == Guid.Empty)
-        {
-            return Result.Validation(
-                "Es wurde keine gültige Tierheim-ID angegeben.");
-        }
-
-        var user = await _userManager.FindByIdAsync(
-            userId.ToString());
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
         {
-            return Result.NotFound(
-                "Benutzer wurde nicht gefunden.");
+            return Result.NotFound("Benutzer wurde nicht gefunden.");
         }
 
         if (!user.IsActive)
         {
             return Result.Conflict(
-                "Einem deaktivierten Benutzer kann kein Tierheim " +
-                "zugewiesen werden.");
+                "Einem deaktivierten Benutzer kann kein Tierheimzugriff zugewiesen werden.");
         }
 
         var shelter = await _shelterRepository.GetByIdAsync(
@@ -463,92 +319,49 @@ public sealed partial class IdentityService : IIdentityService
 
         if (shelter is null)
         {
-            return Result.NotFound(
-                "Tierheim wurde nicht gefunden.");
+            return Result.NotFound("Tierheim wurde nicht gefunden.");
         }
 
-        var alreadyShelterAdmin =
-            await _userManager.IsInRoleAsync(
+        var alreadyInRole = await _userManager.IsInRoleAsync(
+            user,
+            Roles.ShelterAdmin);
+
+        if (user.ShelterId == shelterId && alreadyInRole)
+        {
+            return Result.NoContent();
+        }
+
+        var previousShelterId = user.ShelterId;
+        user.ShelterId = shelterId;
+
+        var updateResult = await _userManager.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+        {
+            user.ShelterId = previousShelterId;
+            return Result.Conflict(
+                "Der Tierheimzugriff konnte nicht gespeichert werden.");
+        }
+
+        if (!alreadyInRole)
+        {
+            var roleResult = await _userManager.AddToRoleAsync(
                 user,
                 Roles.ShelterAdmin);
 
-        var previousShelterId = user.ShelterId;
-        var shelterChanged =
-            previousShelterId != shelterId;
-
-        if (shelterChanged)
-        {
-            user.ShelterId = shelterId;
-
-            var updateResult =
-                await _userManager.UpdateAsync(
-                    user);
-
-            if (!updateResult.Succeeded)
-            {
-                user.ShelterId = previousShelterId;
-
-                _logger.LogError(
-                    "Das Tierheim {ShelterId} konnte Benutzer {UserId} " +
-                    "nicht zugewiesen werden. Fehler: {Errors}",
-                    shelterId,
-                    userId,
-                    FormatIdentityErrors(updateResult));
-
-                return Result.Conflict(
-                    "Die Tierheimzuweisung konnte nicht gespeichert werden.");
-            }
-        }
-
-        if (!alreadyShelterAdmin)
-        {
-            var roleResult =
-                await _userManager.AddToRoleAsync(
-                    user,
-                    Roles.ShelterAdmin);
-
             if (!roleResult.Succeeded)
             {
-                if (shelterChanged)
-                {
-                    user.ShelterId = previousShelterId;
-
-                    var rollbackResult =
-                        await _userManager.UpdateAsync(
-                            user);
-
-                    if (!rollbackResult.Succeeded)
-                    {
-                        _logger.LogCritical(
-                            "Die Tierheimzuweisung von Benutzer {UserId} " +
-                            "konnte nach fehlgeschlagener Rollenzuweisung " +
-                            "nicht zurückgesetzt werden. Fehler: {Errors}",
-                            userId,
-                            FormatIdentityErrors(rollbackResult));
-                    }
-                }
-
-                _logger.LogError(
-                    "Die Rolle {Role} konnte Benutzer {UserId} " +
-                    "nicht zugewiesen werden. Fehler: {Errors}",
-                    Roles.ShelterAdmin,
-                    userId,
-                    FormatIdentityErrors(roleResult));
+                user.ShelterId = previousShelterId;
+                await _userManager.UpdateAsync(user);
 
                 return Result.Conflict(
-                    "Die ShelterAdmin-Rolle konnte nicht zugewiesen werden.");
+                    "Die Tierheimrolle konnte nicht zugewiesen werden.");
             }
         }
 
         await RevokeActiveRefreshTokensAsync(
-            userId,
+            user.Id,
             cancellationToken);
-
-        _logger.LogInformation(
-            "Benutzer {UserId} wurde dem Tierheim {ShelterId} " +
-            "als ShelterAdmin zugewiesen.",
-            userId,
-            shelterId);
 
         return Result.NoContent();
     }
@@ -565,101 +378,53 @@ public sealed partial class IdentityService : IIdentityService
                 "Es wurde keine gültige Benutzer-ID angegeben.");
         }
 
-        var user = await _userManager.FindByIdAsync(
-            userId.ToString());
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
         {
-            return Result.NotFound(
-                "Benutzer wurde nicht gefunden.");
+            return Result.NotFound("Benutzer wurde nicht gefunden.");
         }
 
-        var wasShelterAdmin =
-            await _userManager.IsInRoleAsync(
+        var hasRole = await _userManager.IsInRoleAsync(
+            user,
+            Roles.ShelterAdmin);
+
+        if (user.ShelterId is null && !hasRole)
+        {
+            return Result.NoContent();
+        }
+
+        var previousShelterId = user.ShelterId;
+        user.ShelterId = null;
+
+        var updateResult = await _userManager.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+        {
+            user.ShelterId = previousShelterId;
+            return Result.Conflict(
+                "Der Tierheimzugriff konnte nicht entfernt werden.");
+        }
+
+        if (hasRole)
+        {
+            var roleResult = await _userManager.RemoveFromRoleAsync(
                 user,
                 Roles.ShelterAdmin);
 
-        var previousShelterId = user.ShelterId;
-
-        /*
-         * Die Operation ist idempotent.
-         * Fehlen Rolle und ShelterId bereits, ist der gewünschte
-         * Zustand schon erreicht.
-         */
-        if (wasShelterAdmin)
-        {
-            var removeRoleResult =
-                await _userManager.RemoveFromRoleAsync(
-                    user,
-                    Roles.ShelterAdmin);
-
-            if (!removeRoleResult.Succeeded)
-            {
-                _logger.LogError(
-                    "Die Rolle {Role} konnte Benutzer {UserId} " +
-                    "nicht entzogen werden. Fehler: {Errors}",
-                    Roles.ShelterAdmin,
-                    userId,
-                    FormatIdentityErrors(removeRoleResult));
-
-                return Result.Conflict(
-                    "Die ShelterAdmin-Rolle konnte nicht entfernt werden.");
-            }
-        }
-
-        if (previousShelterId.HasValue)
-        {
-            user.ShelterId = null;
-
-            var updateResult =
-                await _userManager.UpdateAsync(
-                    user);
-
-            if (!updateResult.Succeeded)
+            if (!roleResult.Succeeded)
             {
                 user.ShelterId = previousShelterId;
-
-                if (wasShelterAdmin)
-                {
-                    var rollbackRoleResult =
-                        await _userManager.AddToRoleAsync(
-                            user,
-                            Roles.ShelterAdmin);
-
-                    if (!rollbackRoleResult.Succeeded)
-                    {
-                        _logger.LogCritical(
-                            "Die Rolle {Role} von Benutzer {UserId} " +
-                            "konnte nach fehlgeschlagener Entfernung " +
-                            "der ShelterId nicht wiederhergestellt werden. " +
-                            "Fehler: {Errors}",
-                            Roles.ShelterAdmin,
-                            userId,
-                            FormatIdentityErrors(rollbackRoleResult));
-                    }
-                }
-
-                _logger.LogError(
-                    "Die ShelterId von Benutzer {UserId} konnte nicht " +
-                    "entfernt werden. Fehler: {Errors}",
-                    userId,
-                    FormatIdentityErrors(updateResult));
+                await _userManager.UpdateAsync(user);
 
                 return Result.Conflict(
-                    "Der Tierheimzugriff konnte nicht vollständig " +
-                    "entfernt werden.");
+                    "Die Tierheimrolle konnte nicht entfernt werden.");
             }
         }
 
         await RevokeActiveRefreshTokensAsync(
-            userId,
+            user.Id,
             cancellationToken);
-
-        _logger.LogInformation(
-            "Der Tierheimzugriff von Benutzer {UserId} wurde entfernt. " +
-            "Vorherige Tierheim-ID: {PreviousShelterId}.",
-            userId,
-            previousShelterId);
 
         return Result.NoContent();
     }
@@ -677,68 +442,35 @@ public sealed partial class IdentityService : IIdentityService
                 "Es wurde keine gültige Benutzer-ID angegeben.");
         }
 
-        var user = await _userManager.FindByIdAsync(
-            userId.ToString());
+        var user = await _userManager.FindByIdAsync(userId.ToString());
 
         if (user is null)
         {
-            return Result.NotFound(
-                "Benutzer wurde nicht gefunden.");
+            return Result.NotFound("Benutzer wurde nicht gefunden.");
         }
 
-        /*
-         * Die Operation ist idempotent.
-         * Hat der Benutzer bereits den gewünschten Status,
-         * muss nichts geändert werden.
-         */
         if (user.IsActive == isActive)
         {
             return Result.NoContent();
         }
 
-        var previousStatus = user.IsActive;
-
         user.IsActive = isActive;
 
-        var updateResult =
-            await _userManager.UpdateAsync(
-                user);
+        var updateResult = await _userManager.UpdateAsync(user);
 
         if (!updateResult.Succeeded)
         {
-            user.IsActive = previousStatus;
-
-            _logger.LogError(
-                "Der Aktivstatus von Benutzer {UserId} konnte nicht auf " +
-                "{IsActive} gesetzt werden. Fehler: {Errors}",
-                userId,
-                isActive,
-                FormatIdentityErrors(updateResult));
-
+            user.IsActive = !isActive;
             return Result.Conflict(
-                "Der Benutzerstatus konnte nicht gespeichert werden.");
+                "Der Aktivstatus konnte nicht gespeichert werden.");
         }
 
-        /*
-         * Beim Deaktivieren werden alle aktiven Refresh Tokens
-         * widerrufen.
-         */
         if (!isActive)
         {
             await RevokeActiveRefreshTokensAsync(
-                userId,
+                user.Id,
                 cancellationToken);
-
-            _logger.LogInformation(
-                "Benutzer {UserId} wurde deaktiviert.",
-                userId);
-
-            return Result.NoContent();
         }
-
-        _logger.LogInformation(
-            "Benutzer {UserId} wurde wieder aktiviert.",
-            userId);
 
         return Result.NoContent();
     }
@@ -748,8 +480,7 @@ public sealed partial class IdentityService : IIdentityService
         RefreshToken? refreshTokenToReplace,
         CancellationToken cancellationToken)
     {
-        var roles = await _userManager.GetRolesAsync(
-            user);
+        var roles = await _userManager.GetRolesAsync(user);
 
         var jwtUser = new JwtUser(
             user.Id,
@@ -759,15 +490,12 @@ public sealed partial class IdentityService : IIdentityService
             roles.ToList().AsReadOnly(),
             user.ShelterId);
 
-        var authentication =
-            await _jwtService.GenerateTokenAsync(
-                jwtUser);
+        var authentication = await _jwtService.GenerateTokenAsync(jwtUser);
 
-        var newRefreshToken =
-            _refreshTokenService.Create(
-                user.Id,
-                refreshTokenToReplace?.CreatedByIp,
-                refreshTokenToReplace?.UserAgent);
+        var newRefreshToken = _refreshTokenService.Create(
+            user.Id,
+            refreshTokenToReplace?.CreatedByIp,
+            refreshTokenToReplace?.UserAgent);
 
         if (refreshTokenToReplace is not null)
         {
@@ -780,25 +508,27 @@ public sealed partial class IdentityService : IIdentityService
             newRefreshToken.RefreshToken,
             cancellationToken);
 
-        await _unitOfWork.SaveChangesAsync(
-            cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return authentication with
         {
-            RefreshToken =
-                newRefreshToken.PlainTextToken
+            RefreshToken = newRefreshToken.PlainTextToken
         };
     }
 
-    private async Task<int> RevokeActiveRefreshTokensAsync(
+    private async Task RevokeActiveRefreshTokensAsync(
         Guid userId,
         CancellationToken cancellationToken)
     {
         var activeRefreshTokens =
-            await _refreshTokenRepository
-                .GetActiveTokensByUserIdAsync(
-                    userId,
-                    cancellationToken);
+            await _refreshTokenRepository.GetActiveTokensByUserIdAsync(
+                userId,
+                cancellationToken);
+
+        if (activeRefreshTokens.Count == 0)
+        {
+            return;
+        }
 
         foreach (var refreshToken in activeRefreshTokens)
         {
@@ -807,13 +537,7 @@ public sealed partial class IdentityService : IIdentityService
                 revokedByIp: null);
         }
 
-        if (activeRefreshTokens.Count > 0)
-        {
-            await _unitOfWork.SaveChangesAsync(
-                cancellationToken);
-        }
-
-        return activeRefreshTokens.Count;
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     private static string FormatIdentityErrors(
@@ -821,7 +545,6 @@ public sealed partial class IdentityService : IIdentityService
     {
         return string.Join(
             Environment.NewLine,
-            result.Errors.Select(
-                error => error.Description));
+            result.Errors.Select(error => error.Description));
     }
 }

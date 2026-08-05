@@ -198,9 +198,16 @@ namespace TierMatch.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AnimalId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "AnimalId", "Status");
 
                     b.ToTable("AdoptionRequests", (string)null);
                 });

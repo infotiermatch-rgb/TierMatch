@@ -45,5 +45,6 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.8" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.8.1" />
     <PackageVersion Include="Respawn" Version="6.2.1" />
+    <PackageVersion Include="MailKit" Version="4.17.0" />
   </ItemGroup>
 </Project>

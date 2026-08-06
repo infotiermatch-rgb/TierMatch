@@ -47,6 +47,21 @@ public interface IIdentityService
         ChangePasswordRequest request,
         CancellationToken cancellationToken = default);
 
+    /*
+     * Erstellt ein freigeschaltetes Tierheimkonto
+     * ohne Startpasswort und ohne Anmeldesitzung.
+     *
+     * Der zurückgegebene Token wird anschließend
+     * für die erstmalige Passwortvergabe verwendet.
+     */
+    Task<Result<ShelterAdminAccountSetupResponse>>
+        CreateShelterAdminAccountAsync(
+            string firstName,
+            string lastName,
+            string email,
+            Guid shelterId,
+            CancellationToken cancellationToken = default);
+
     Task<Result> AssignShelterAdminAsync(
         Guid userId,
         Guid shelterId,

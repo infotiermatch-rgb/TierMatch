@@ -9,17 +9,20 @@ namespace TierMatch.Infrastructure.Email;
 /// <summary>
 /// Entwicklungsimplementierung des E-Mail-Dienstes.
 ///
-/// Es wird noch keine echte E-Mail versendet. Der Link zur
-/// Passwortzurücksetzung wird im Anwendungsprotokoll ausgegeben.
+/// Es wird keine echte E-Mail versendet. Die erzeugten Links
+/// werden stattdessen im Anwendungsprotokoll ausgegeben.
 ///
-/// Diese Implementierung muss vor einer produktiven Veröffentlichung
-/// durch einen echten E-Mail-Anbieter ersetzt werden.
+/// Diese Implementierung muss vor einer produktiven
+/// Veröffentlichung durch einen echten E-Mail-Dienst
+/// ersetzt werden.
 /// </summary>
 public sealed class DevelopmentEmailService
     : IEmailService
 {
     private readonly PasswordResetOptions _options;
-    private readonly ILogger<DevelopmentEmailService> _logger;
+
+    private readonly ILogger<DevelopmentEmailService>
+        _logger;
 
     public DevelopmentEmailService(
         IOptions<PasswordResetOptions> options,
@@ -35,23 +38,66 @@ public sealed class DevelopmentEmailService
         string resetToken,
         CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        cancellationToken
+            .ThrowIfCancellationRequested();
 
-        if (string.IsNullOrWhiteSpace(
-                _options.ResetUrl))
-        {
-            throw new InvalidOperationException(
-                "Die Konfiguration PasswordReset:ResetUrl fehlt.");
-        }
+        var resetLink =
+            BuildPasswordResetLink(
+                recipientEmail,
+                resetToken);
 
-        if (!Uri.TryCreate(
-                _options.ResetUrl,
-                UriKind.Absolute,
-                out _))
-        {
-            throw new InvalidOperationException(
-                "PasswordReset:ResetUrl enthält keine gültige URL.");
-        }
+        _logger.LogInformation(
+            """
+            Entwicklungs-E-Mail zur Passwortzurücksetzung:
+
+            Empfänger: {RecipientEmail}
+            Name: {RecipientName}
+            Link: {ResetLink}
+            """,
+            recipientEmail,
+            recipientName,
+            resetLink);
+
+        return Task.CompletedTask;
+    }
+
+    public Task SendShelterAccountSetupEmailAsync(
+        string recipientEmail,
+        string recipientName,
+        string shelterName,
+        string setupToken,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken
+            .ThrowIfCancellationRequested();
+
+        var setupLink =
+            BuildPasswordResetLink(
+                recipientEmail,
+                setupToken);
+
+        _logger.LogInformation(
+            """
+            Entwicklungs-E-Mail zur Einrichtung eines Tierheimkontos:
+
+            Empfänger: {RecipientEmail}
+            Ansprechpartner: {RecipientName}
+            Tierheim: {ShelterName}
+            Einrichtungslink: {SetupLink}
+            """,
+            recipientEmail,
+            recipientName,
+            shelterName,
+            setupLink);
+
+        return Task.CompletedTask;
+    }
+
+    private string BuildPasswordResetLink(
+        string recipientEmail,
+        string resetToken)
+    {
+        ValidateConfiguration();
 
         var encodedEmail =
             Uri.EscapeDataString(
@@ -68,22 +114,29 @@ public sealed class DevelopmentEmailService
                 ? "&"
                 : "?";
 
-        var resetLink =
-            $"{_options.ResetUrl}{separator}" +
-            $"email={encodedEmail}&token={encodedToken}";
+        return
+            $"{_options.ResetUrl}" +
+            $"{separator}" +
+            $"email={encodedEmail}" +
+            $"&token={encodedToken}";
+    }
 
-        _logger.LogInformation(
-            """
-            Entwicklungs-E-Mail zur Passwortzurücksetzung:
+    private void ValidateConfiguration()
+    {
+        if (string.IsNullOrWhiteSpace(
+                _options.ResetUrl))
+        {
+            throw new InvalidOperationException(
+                "Die Konfiguration PasswordReset:ResetUrl fehlt.");
+        }
 
-            Empfänger: {RecipientEmail}
-            Name: {RecipientName}
-            Link: {ResetLink}
-            """,
-            recipientEmail,
-            recipientName,
-            resetLink);
-
-        return Task.CompletedTask;
+        if (!Uri.TryCreate(
+                _options.ResetUrl,
+                UriKind.Absolute,
+                out _))
+        {
+            throw new InvalidOperationException(
+                "PasswordReset:ResetUrl enthält keine gültige URL.");
+        }
     }
 }

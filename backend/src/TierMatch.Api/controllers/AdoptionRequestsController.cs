@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using TierMatch.Application.AdoptionRequests.Commands.ApproveAdoptionRequest;
 using TierMatch.Application.AdoptionRequests.Commands.CreateAdoptionRequest;
+using TierMatch.Application.AdoptionRequests.Commands.RejectAdoptionRequest;
 using TierMatch.Application.AdoptionRequests.DTOs;
 using TierMatch.Application.AdoptionRequests.Queries.GetAdoptionRequestById;
 using TierMatch.Application.AdoptionRequests.Queries.GetAdoptionRequests;
@@ -66,7 +67,11 @@ public sealed class AdoptionRequestsController
     }
 
     /// <summary>
-    /// Gibt alle Adoptionsanfragen zurück.
+    /// Gibt die verwaltbaren Adoptionsanfragen zurück.
+    ///
+    /// Globale Administratoren sehen alle Anfragen.
+    /// Tierheimadministratoren sehen nur Anfragen
+    /// zu Tieren ihres eigenen Tierheims.
     /// </summary>
     [Authorize(Policy = Policies.CanManageShelter)]
     [HttpGet]
@@ -75,18 +80,19 @@ public sealed class AdoptionRequestsController
         StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<List<AdoptionRequestDto>>> GetAll(
+    public async Task<IActionResult> GetAll(
         CancellationToken cancellationToken)
     {
-        var requests = await Mediator.Send(
+        var result = await Mediator.Send(
             new GetAdoptionRequestsQuery(),
             cancellationToken);
 
-        return Ok(requests);
+        return HandleResult(result);
     }
 
     /// <summary>
-    /// Gibt eine Adoptionsanfrage anhand ihrer ID zurück.
+    /// Gibt eine verwaltbare Adoptionsanfrage
+    /// anhand ihrer ID zurück.
     /// </summary>
     [Authorize(Policy = Policies.CanManageShelter)]
     [HttpGet("{id:guid}")]
@@ -96,28 +102,22 @@ public sealed class AdoptionRequestsController
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AdoptionRequestDto>> GetById(
+    public async Task<IActionResult> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var request = await Mediator.Send(
+        var result = await Mediator.Send(
             new GetAdoptionRequestByIdQuery(id),
             cancellationToken);
 
-        if (request is null)
-        {
-            return NotFound(new
-            {
-                error =
-                    "Die Adoptionsanfrage wurde nicht gefunden."
-            });
-        }
-
-        return Ok(request);
+        return HandleResult(result);
     }
 
     /// <summary>
-    /// Genehmigt eine Adoptionsanfrage.
+    /// Genehmigt eine offene Adoptionsanfrage.
+    ///
+    /// Das Tier wird reserviert und alle anderen
+    /// offenen Anfragen für dieses Tier werden abgelehnt.
     /// </summary>
     [Authorize(Policy = Policies.CanManageShelter)]
     [HttpPatch("{id:guid}/approve")]
@@ -133,6 +133,33 @@ public sealed class AdoptionRequestsController
     {
         var result = await Mediator.Send(
             new ApproveAdoptionRequestCommand(id),
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return HandleResult(result);
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Lehnt eine offene Adoptionsanfrage ab.
+    /// Der Status des zugehörigen Tieres bleibt unverändert.
+    /// </summary>
+    [Authorize(Policy = Policies.CanManageShelter)]
+    [HttpPatch("{id:guid}/reject")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Reject(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(
+            new RejectAdoptionRequestCommand(id),
             cancellationToken);
 
         if (!result.IsSuccess)

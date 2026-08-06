@@ -1,32 +1,45 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+
 using TierMatch.Domain.Entities;
 using TierMatch.Infrastructure.Identity;
 
 namespace TierMatch.Infrastructure.Data;
 
 public class AppDbContext
-    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    : IdentityDbContext<
+        ApplicationUser,
+        IdentityRole<Guid>,
+        Guid>
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options)
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
 
-    public DbSet<Animal> Animals => Set<Animal>();
+    public DbSet<Animal> Animals
+        => Set<Animal>();
 
-    public DbSet<Shelter> Shelters => Set<Shelter>();
+    public DbSet<Shelter> Shelters
+        => Set<Shelter>();
 
-    public DbSet<AnimalImage> AnimalImages => Set<AnimalImage>();
+    public DbSet<AnimalImage> AnimalImages
+        => Set<AnimalImage>();
 
     public DbSet<AdoptionRequest> AdoptionRequests
         => Set<AdoptionRequest>();
 
-        public DbSet<RefreshToken> RefreshTokens
-    => Set<RefreshToken>();
+    public DbSet<RefreshToken> RefreshTokens
+        => Set<RefreshToken>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public DbSet<ShelterRegistration>
+        ShelterRegistrations
+        => Set<ShelterRegistration>();
+
+    protected override void OnModelCreating(
+        ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 

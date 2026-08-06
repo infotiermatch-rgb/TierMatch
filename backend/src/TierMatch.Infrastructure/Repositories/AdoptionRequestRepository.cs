@@ -29,12 +29,41 @@ public class AdoptionRequestRepository
                 cancellationToken);
     }
 
+    public async Task<AdoptionRequest?> GetByIdAndShelterIdAsync(
+        Guid id,
+        Guid shelterId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AdoptionRequests
+            .Include(request => request.Animal)
+            .FirstOrDefaultAsync(
+                request =>
+                    request.Id == id &&
+                    request.Animal.ShelterId == shelterId,
+                cancellationToken);
+    }
+
     public async Task<List<AdoptionRequest>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
         return await _context.AdoptionRequests
             .AsNoTracking()
             .Include(request => request.Animal)
+            .OrderByDescending(
+                request => request.RequestedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<AdoptionRequest>> GetByShelterIdAsync(
+        Guid shelterId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.AdoptionRequests
+            .AsNoTracking()
+            .Include(request => request.Animal)
+            .Where(
+                request =>
+                    request.Animal.ShelterId == shelterId)
             .OrderByDescending(
                 request => request.RequestedAt)
             .ToListAsync(cancellationToken);
@@ -89,9 +118,11 @@ public class AdoptionRequestRepository
         Guid animalId,
         CancellationToken cancellationToken = default)
     {
+        /*
+         * Kein AsNoTracking(), da diese Datensätze beim
+         * Genehmigen einer anderen Anfrage verändert werden.
+         */
         return await _context.AdoptionRequests
-            .AsNoTracking()
-            .Include(request => request.Animal)
             .Where(
                 request =>
                     request.AnimalId == animalId &&

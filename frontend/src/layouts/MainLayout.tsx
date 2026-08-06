@@ -21,6 +21,7 @@ export function MainLayout() {
   const {
     status,
     user,
+    canManageShelter,
     logout,
   } = useAuth();
 
@@ -94,6 +95,21 @@ export function MainLayout() {
                   >
                     Meine Anfragen
                   </NavLink>
+
+                  {canManageShelter && (
+                    <NavLink
+                      className={({
+                        isActive,
+                      }) =>
+                        getNavigationClassName(
+                          isActive,
+                        )
+                      }
+                      to="/shelter"
+                    >
+                      Shelter
+                    </NavLink>
+                  )}
 
                   <NavLink
                     className={({

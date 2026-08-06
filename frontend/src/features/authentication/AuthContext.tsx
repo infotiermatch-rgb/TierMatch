@@ -34,13 +34,39 @@ export type AuthenticationStatus =
   | "authenticated"
   | "anonymous";
 
+export type UserRole =
+  | "Admin"
+  | "ShelterAdmin"
+  | "User";
+
 type AuthContextValue = {
   status: AuthenticationStatus;
   user: CurrentUserResponse | null;
 
+  /*
+   * Rollen- und Tierheimdaten
+   */
+  roles: string[];
+  shelterId: string | null;
+
+  isAdmin: boolean;
+  isShelterAdmin: boolean;
+  isUser: boolean;
+
+  /*
+   * true für:
+   * - globale Administratoren
+   * - ShelterAdmins mit gültiger ShelterId
+   */
+  canManageShelter: boolean;
+
+  hasRole: (
+    role: UserRole,
+  ) => boolean;
+
   login: (
     request: LoginRequest,
-  ) => Promise<void>;
+  ) => Promise<CurrentUserResponse>;
 
   register: (
     request: RegisterRequest,
@@ -56,7 +82,8 @@ type AuthContextValue = {
 
   logout: () => Promise<void>;
 
-  reloadCurrentUser: () => Promise<void>;
+  reloadCurrentUser:
+    () => Promise<CurrentUserResponse>;
 };
 
 type AuthProviderProps = {
@@ -77,32 +104,38 @@ export function AuthProvider({
   const [user, setUser] =
     useState<CurrentUserResponse | null>(null);
 
-  const setAnonymousSession = useCallback(() => {
-    authTokenStore.clearSession();
-    setUser(null);
-    setStatus("anonymous");
-  }, []);
+  const setAnonymousSession =
+    useCallback(() => {
+      authTokenStore.clearSession();
+      setUser(null);
+      setStatus("anonymous");
+    }, []);
 
   const reloadCurrentUser =
-    useCallback(async (): Promise<void> => {
-      const currentUser =
-        await currentUserRequest();
+    useCallback(
+      async (): Promise<CurrentUserResponse> => {
+        const currentUser =
+          await currentUserRequest();
 
-      setUser(currentUser);
-      setStatus("authenticated");
-    }, []);
+        setUser(currentUser);
+        setStatus("authenticated");
+
+        return currentUser;
+      },
+      [],
+    );
 
   const login = useCallback(
     async (
       request: LoginRequest,
-    ): Promise<void> => {
+    ): Promise<CurrentUserResponse> => {
       const authentication =
         await loginRequest(request);
 
       authTokenStore.setSession(authentication);
 
       try {
-        await reloadCurrentUser();
+        return await reloadCurrentUser();
       } catch (error: unknown) {
         setAnonymousSession();
         throw error;
@@ -237,10 +270,54 @@ export function AuthProvider({
     };
   }, [setAnonymousSession]);
 
+  const roles = useMemo(
+    () => user?.roles ?? [],
+    [user],
+  );
+
+  const hasRole = useCallback(
+    (role: UserRole): boolean => {
+      return roles.includes(role);
+    },
+    [roles],
+  );
+
+  const isAdmin = useMemo(
+    () => hasRole("Admin"),
+    [hasRole],
+  );
+
+  const isShelterAdmin = useMemo(
+    () => hasRole("ShelterAdmin"),
+    [hasRole],
+  );
+
+  const isUser = useMemo(
+    () => hasRole("User"),
+    [hasRole],
+  );
+
+  const shelterId =
+    user?.shelterId ?? null;
+
+  const canManageShelter =
+    isAdmin ||
+    (
+      isShelterAdmin &&
+      shelterId !== null
+    );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
+      roles,
+      shelterId,
+      isAdmin,
+      isShelterAdmin,
+      isUser,
+      canManageShelter,
+      hasRole,
       login,
       register,
       updateProfile,
@@ -251,6 +328,13 @@ export function AuthProvider({
     [
       status,
       user,
+      roles,
+      shelterId,
+      isAdmin,
+      isShelterAdmin,
+      isUser,
+      canManageShelter,
+      hasRole,
       login,
       register,
       updateProfile,

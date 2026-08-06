@@ -9,7 +9,16 @@ public interface IAdoptionRequestRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<AdoptionRequest?> GetByIdAndShelterIdAsync(
+        Guid id,
+        Guid shelterId,
+        CancellationToken cancellationToken = default);
+
     Task<List<AdoptionRequest>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<List<AdoptionRequest>> GetByShelterIdAsync(
+        Guid shelterId,
         CancellationToken cancellationToken = default);
 
     Task<List<AdoptionRequest>> GetByAnimalIdAsync(
@@ -37,11 +46,9 @@ public interface IAdoptionRequestRepository
         AdoptionRequest request,
         CancellationToken cancellationToken = default);
 
-    void Update(
-        AdoptionRequest request);
+    void Update(AdoptionRequest request);
 
-    void Delete(
-        AdoptionRequest request);
+    void Delete(AdoptionRequest request);
 
     Task<bool> ExistsAsync(
         Guid id,

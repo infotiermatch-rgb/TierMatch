@@ -6,7 +6,8 @@ public sealed class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
 
-    public UnitOfWork(AppDbContext context)
+    public UnitOfWork(
+        AppDbContext context)
     {
         _context = context;
     }
@@ -14,6 +15,20 @@ public sealed class UnitOfWork : IUnitOfWork
     public async Task<int> SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
-        return await _context.SaveChangesAsync(cancellationToken);
+        return await _context.SaveChangesAsync(
+            cancellationToken);
+    }
+
+    public async Task<IUnitOfWorkTransaction>
+        BeginTransactionAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var transaction =
+            await _context.Database
+                .BeginTransactionAsync(
+                    cancellationToken);
+
+        return new EfUnitOfWorkTransaction(
+            transaction);
     }
 }

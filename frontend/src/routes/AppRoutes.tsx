@@ -19,7 +19,14 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 
+import { ShelterAdoptionRequestDetailsPage } from "../pages/shelter/ShelterAdoptionRequestDetailsPage";
+import { ShelterAdoptionRequestsPage } from "../pages/shelter/ShelterAdoptionRequestsPage";
+import { ShelterDashboardPage } from "../pages/shelter/ShelterDashboardPage";
+import { ShelterLoginPage } from "../pages/shelter/ShelterLoginPage";
+import { ShelterRegisterPage } from "../pages/shelter/ShelterRegisterPage";
+
 import { ProtectedRoute } from "./ProtectedRoute";
+import { ShelterRoute } from "./ShelterRoute";
 
 export function AppRoutes() {
   return (
@@ -60,6 +67,16 @@ export function AppRoutes() {
           element={<ResetPasswordPage />}
         />
 
+        <Route
+          path="shelter/login"
+          element={<ShelterLoginPage />}
+        />
+
+        <Route
+          path="shelter/register"
+          element={<ShelterRegisterPage />}
+        />
+
         <Route element={<ProtectedRoute />}>
           <Route
             path="profile"
@@ -87,6 +104,27 @@ export function AppRoutes() {
             path="animals/:id/adoption-request"
             element={
               <CreateAdoptionRequestPage />
+            }
+          />
+        </Route>
+
+        <Route element={<ShelterRoute />}>
+          <Route
+            path="shelter"
+            element={<ShelterDashboardPage />}
+          />
+
+          <Route
+            path="shelter/adoption-requests"
+            element={
+              <ShelterAdoptionRequestsPage />
+            }
+          />
+
+          <Route
+            path="shelter/adoption-requests/:id"
+            element={
+              <ShelterAdoptionRequestDetailsPage />
             }
           />
         </Route>

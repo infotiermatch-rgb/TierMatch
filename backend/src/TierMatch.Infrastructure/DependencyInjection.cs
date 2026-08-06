@@ -152,6 +152,10 @@ public static class DependencyInjection
         //
 
         services.AddScoped<
+            IShelterRegistrationRepository,
+            ShelterRegistrationRepository>();
+
+        services.AddScoped<
             IAnimalRepository,
             AnimalRepository>();
 
